@@ -1,103 +1,291 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
+import { Message, MessageContent } from "@/components/ai-elements/message"
+import {
+    PromptInput,
+    PromptInputActionAddAttachments,
+    PromptInputActionMenu,
+    PromptInputActionMenuContent,
+    PromptInputActionMenuTrigger,
+    PromptInputAttachment,
+    PromptInputAttachments,
+    PromptInputBody,
+    PromptInputButton,
+    type PromptInputMessage,
+    PromptInputModelSelect,
+    PromptInputModelSelectContent,
+    PromptInputModelSelectItem,
+    PromptInputModelSelectTrigger,
+    PromptInputModelSelectValue,
+    PromptInputSubmit,
+    PromptInputTextarea,
+    PromptInputToolbar,
+    PromptInputTools,
+} from "@/components/ai-elements/prompt-input"
+import { Action, Actions } from "@/components/ai-elements/actions"
+import { useState } from "react"
+import { useChat } from "@ai-sdk/react"
+import { Response } from "@/components/ai-elements/response"
+import { CopyIcon, GlobeIcon, RefreshCcwIcon, MessageSquareIcon, PlusIcon } from "lucide-react"
+import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources"
+import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning"
+import { Loader } from "@/components/ai-elements/loader"
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarInset,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarProvider,
+    SidebarTrigger,
+} from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+const models = [
+    {
+        name: "Claude Haiku 3",
+        value: "claude-3-haiku-20240307",
+    },
+    {
+        name: "Claude Haiku 3.5",
+        value: "claude-3-5-haiku-latest",
+    },
+    {
+        name: "Claude Sonnet 3.7",
+        value: "claude-3-7-sonnet-latest",
+    },
+    {
+        name: "Claude Opus 4",
+        value: "claude-opus-4-20250514",
+    },
+]
+
+const ChatBotDemo = () => {
+    const [input, setInput] = useState("")
+    const [model, setModel] = useState<string>(models[0].value)
+    const [webSearch, setWebSearch] = useState(false)
+    const { messages, sendMessage, status, regenerate } = useChat()
+
+    const chatSessions = [
+        { id: "1", title: "New Chat", timestamp: "2 hours ago" },
+        { id: "2", title: "Previous Conversation", timestamp: "Yesterday" },
+        { id: "3", title: "Another Chat", timestamp: "2 days ago" },
+    ]
+
+    const handleSubmit = (message: PromptInputMessage) => {
+        const hasText = Boolean(message.text)
+        const hasAttachments = Boolean(message.files?.length)
+
+        if (!(hasText || hasAttachments)) {
+            return
+        }
+
+        sendMessage(
+            {
+                text: message.text || "Sent with attachments",
+                files: message.files,
+            },
+            {
+                body: {
+                    model: model,
+                    webSearch: webSearch,
+                },
+            },
+        )
+        setInput("")
+    }
+
+    return (
+        <SidebarProvider>
+            <Sidebar collapsible="offcanvas">
+                <SidebarHeader className="border-b border-sidebar-border">
+                    <Button className="w-full justify-start gap-2 bg-transparent" variant="outline">
+                        <PlusIcon className="size-4" />
+                        New Chat
+                    </Button>
+                </SidebarHeader>
+                <SidebarContent>
+                    <SidebarGroup>
+                        <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {chatSessions.map((session) => (
+                                    <SidebarMenuItem key={session.id}>
+                                        <SidebarMenuButton>
+                                            <MessageSquareIcon className="size-4" />
+                                            <div className="flex flex-col items-start gap-0.5 overflow-hidden">
+                                                <span className="truncate font-medium">{session.title}</span>
+                                                <span className="text-xs text-sidebar-foreground/60 truncate">{session.timestamp}</span>
+                                            </div>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                </SidebarContent>
+            </Sidebar>
+
+            <SidebarInset>
+                <div className="flex flex-col h-screen">
+                    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+                        <SidebarTrigger />
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-lg font-semibold">AI Chatbot</h1>
+                        </div>
+                    </header>
+
+                    <div className="flex-1 overflow-hidden p-6">
+                        <div className="max-w-4xl mx-auto h-full flex flex-col">
+                            <Conversation className="h-full">
+                                <ConversationContent>
+                                    {messages.map((message) => (
+                                        <div key={message.id}>
+                                            {message.role === "assistant" &&
+                                                message.parts.filter((part) => part.type === "source-url").length > 0 && (
+                                                    <Sources>
+                                                        <SourcesTrigger count={message.parts.filter((part) => part.type === "source-url").length} />
+                                                        {message.parts
+                                                            .filter((part) => part.type === "source-url")
+                                                            .map((part, i) => (
+                                                                <SourcesContent key={`${message.id}-${i}`}>
+                                                                    <Source key={`${message.id}-${i}`} href={part.url} title={part.url} />
+                                                                </SourcesContent>
+                                                            ))}
+                                                    </Sources>
+                                                )}
+                                            {message.parts.map((part, i) => {
+                                                switch (part.type) {
+                                                    case "text":
+                                                        return (
+                                                            <Message key={`${message.id}-${i}`} from={message.role}>
+                                                                <MessageContent>
+                                                                    <Response>{part.text}</Response>
+                                                                </MessageContent>
+                                                            </Message>
+                                                        )
+                                                    case "reasoning":
+                                                        return (
+                                                            <Reasoning
+                                                                key={`${message.id}-${i}`}
+                                                                className="w-full"
+                                                                isStreaming={
+                                                                    status === "streaming" &&
+                                                                    i === message.parts.length - 1 &&
+                                                                    message.id === messages.at(-1)?.id
+                                                                }
+                                                            >
+                                                                <ReasoningTrigger />
+                                                                <ReasoningContent>{part.text}</ReasoningContent>
+                                                            </Reasoning>
+                                                        )
+                                                    default:
+                                                        return null
+                                                }
+                                            })}
+                                            {message.role === "assistant" && (
+                                                <Actions className="mt-2">
+                                                    <Action
+                                                        onClick={() => regenerate({ body: { model, webSearch } })}
+                                                        label="Retry"
+                                                        tooltip="Retry"
+                                                    >
+                                                        <RefreshCcwIcon className="size-3" />
+                                                    </Action>
+                                                    <Action
+                                                        onClick={() => {
+                                                            const textParts = message.parts
+                                                                .filter((part) => part.type === "text")
+                                                                .map((part) => part.text)
+                                                                .join("\n")
+                                                            navigator.clipboard.writeText(textParts)
+                                                        }}
+                                                        label="Copy"
+                                                        tooltip="Copy"
+                                                    >
+                                                        <CopyIcon className="size-3" />
+                                                    </Action>
+                                                </Actions>
+                                            )}
+                                            {message.role === "user" && (
+                                                <Actions className="mt-2 justify-end">
+                                                    <Action
+                                                        onClick={() => {
+                                                            const textParts = message.parts
+                                                                .filter((part) => part.type === "text")
+                                                                .map((part) => part.text)
+                                                                .join("\n")
+                                                            navigator.clipboard.writeText(textParts)
+                                                        }}
+                                                        label="Copy"
+                                                        tooltip="Copy"
+                                                    >
+                                                        <CopyIcon className="size-3" />
+                                                    </Action>
+                                                </Actions>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {status === "submitted" && <Loader />}
+                                </ConversationContent>
+                                <ConversationScrollButton />
+                            </Conversation>
+
+                            <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
+                                <PromptInputBody>
+                                    <PromptInputAttachments>
+                                        {(attachment) => <PromptInputAttachment data={attachment} />}
+                                    </PromptInputAttachments>
+                                    <PromptInputTextarea onChange={(e) => setInput(e.target.value)} value={input} />
+                                </PromptInputBody>
+                                <PromptInputToolbar>
+                                    <PromptInputTools>
+                                        <PromptInputActionMenu>
+                                            <PromptInputActionMenuTrigger />
+                                            <PromptInputActionMenuContent>
+                                                <PromptInputActionAddAttachments />
+                                            </PromptInputActionMenuContent>
+                                        </PromptInputActionMenu>
+                                        <PromptInputButton
+                                            variant={webSearch ? "default" : "ghost"}
+                                            onClick={() => setWebSearch(!webSearch)}
+                                        >
+                                            <GlobeIcon size={16} />
+                                            <span>Search</span>
+                                        </PromptInputButton>
+                                        <PromptInputModelSelect
+                                            onValueChange={(value) => {
+                                                setModel(value)
+                                            }}
+                                            value={model}
+                                        >
+                                            <PromptInputModelSelectTrigger>
+                                                <PromptInputModelSelectValue />
+                                            </PromptInputModelSelectTrigger>
+                                            <PromptInputModelSelectContent>
+                                                {models.map((model) => (
+                                                    <PromptInputModelSelectItem key={model.value} value={model.value}>
+                                                        {model.name}
+                                                    </PromptInputModelSelectItem>
+                                                ))}
+                                            </PromptInputModelSelectContent>
+                                        </PromptInputModelSelect>
+                                    </PromptInputTools>
+                                    <PromptInputSubmit disabled={!input && !status} status={status} />
+                                </PromptInputToolbar>
+                            </PromptInput>
+                        </div>
+                    </div>
+                </div>
+            </SidebarInset>
+        </SidebarProvider>
+    )
 }
+
+export default ChatBotDemo

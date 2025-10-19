@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
 import { Message, MessageContent } from "@/components/ai-elements/message"
 import {
@@ -24,10 +26,9 @@ import {
     PromptInputTools,
 } from "@/components/ai-elements/prompt-input"
 import { Action, Actions } from "@/components/ai-elements/actions"
-import { useState } from "react"
-import { useChat } from "@ai-sdk/react"
+import { useState, useEffect } from "react"
 import { Response } from "@/components/ai-elements/response"
-import { CopyIcon, GlobeIcon, RefreshCcwIcon, MessageSquareIcon, PlusIcon } from "lucide-react"
+import { CopyIcon, GlobeIcon, RefreshCcwIcon, MessageSquareIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources"
 import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning"
 import { Loader } from "@/components/ai-elements/loader"
@@ -46,6 +47,10 @@ import {
     SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
+import { getUserId } from "@/lib/utils/user"
+import { getUserChats, createChat, deleteChat, loadChatMessages } from "@/db/actions"
+import type { Chat } from "@/db/schema"
+import { useChat } from "@/hooks/use-chat-stream"
 
 const models = [
     {
@@ -70,42 +75,149 @@ const ChatBotDemo = () => {
     const [input, setInput] = useState("")
     const [model, setModel] = useState<string>(models[0].value)
     const [webSearch, setWebSearch] = useState(false)
-    const { messages, sendMessage, status, regenerate } = useChat()
 
-    const chatSessions = [
-        { id: "1", title: "New Chat", timestamp: "2 hours ago" },
-        { id: "2", title: "Previous Conversation", timestamp: "Yesterday" },
-        { id: "3", title: "Another Chat", timestamp: "2 days ago" },
-    ]
+    const [userId, setUserId] = useState<string>("")
+    const [chats, setChats] = useState<Chat[]>([])
+    const [currentChatId, setCurrentChatId] = useState<number | null>(null)
+    const [isLoadingChats, setIsLoadingChats] = useState(true)
 
-    const handleSubmit = (message: PromptInputMessage) => {
+    const { messages, sendMessage, status, regenerate, setMessages } = useChat()
+
+    useEffect(() => {
+        const initializeUser = async () => {
+            const id = getUserId()
+            setUserId(id)
+            console.log("[v0] User ID:", id)
+
+            if (id) {
+                await loadUserChats(id)
+            }
+        }
+
+        initializeUser()
+    }, [])
+
+    const loadUserChats = async (uid: string) => {
+        setIsLoadingChats(true)
+        try {
+            const userChats = await getUserChats(uid)
+            setChats(userChats)
+            console.log("[v0] Loaded chats:", userChats.length)
+
+            // If there are chats, load the most recent one
+            if (userChats.length > 0 && !currentChatId) {
+                await switchToChat(userChats[0].id)
+            }
+        } catch (error) {
+            console.error("[v0] Error loading chats:", error)
+        } finally {
+            setIsLoadingChats(false)
+        }
+    }
+
+    const handleNewChat = async () => {
+        if (!userId) return
+
+        try {
+            const newChat = await createChat(userId, "New Chat")
+            setChats([newChat, ...chats])
+            setCurrentChatId(newChat.id)
+            setMessages([])
+            console.log("[v0] Created new chat:", newChat.id)
+        } catch (error) {
+            console.error("[v0] Error creating chat:", error)
+        }
+    }
+
+    const switchToChat = async (chatId: number) => {
+        setCurrentChatId(chatId)
+
+        try {
+            const chatMessages = await loadChatMessages(chatId)
+            setMessages(chatMessages)
+            console.log("[v0] Loaded messages for chat:", chatId, chatMessages.length)
+        } catch (error) {
+            console.error("[v0] Error loading chat messages:", error)
+            setMessages([])
+        }
+    }
+
+    const handleDeleteChat = async (chatId: number, e: React.MouseEvent) => {
+        e.stopPropagation()
+
+        try {
+            await deleteChat(chatId)
+            const updatedChats = chats.filter((c) => c.id !== chatId)
+            setChats(updatedChats)
+
+            // If deleted current chat, switch to another or create new
+            if (currentChatId === chatId) {
+                if (updatedChats.length > 0) {
+                    await switchToChat(updatedChats[0].id)
+                } else {
+                    setCurrentChatId(null)
+                    setMessages([])
+                }
+            }
+
+            console.log("[v0] Deleted chat:", chatId)
+        } catch (error) {
+            console.error("[v0] Error deleting chat:", error)
+        }
+    }
+
+    const handleSubmit = async (message: PromptInputMessage) => {
         const hasText = Boolean(message.text)
-        const hasAttachments = Boolean(message.files?.length)
+        const hasAttachments = false
 
-        if (!(hasText || hasAttachments)) {
+        if (!hasText) {
             return
         }
 
-        sendMessage(
+        // Create chat if none exists
+        let chatId = currentChatId
+        if (!chatId) {
+            const newChat = await createChat(userId, "New Chat")
+            setChats([newChat, ...chats])
+            setCurrentChatId(newChat.id)
+            chatId = newChat.id
+        }
+
+        await sendMessage(
             {
                 text: message.text || "Sent with attachments",
-                files: message.files,
             },
             {
-                body: {
-                    model: model,
-                    webSearch: webSearch,
-                },
+                sessionId: chatId.toString(),
+                userId: userId,
+                model: model,
+                webSearch: webSearch,
             },
         )
         setInput("")
+    }
+
+    const handleRegenerate = async () => {
+        if (!currentChatId) return
+
+        await regenerate({
+            sessionId: currentChatId.toString(),
+            userId: userId,
+            model: model,
+            webSearch: webSearch,
+        })
     }
 
     return (
         <SidebarProvider>
             <Sidebar collapsible="offcanvas">
                 <SidebarHeader className="border-b border-sidebar-border">
-                    <Button className="w-full justify-start gap-2 bg-transparent" variant="outline">
+                    <Button
+                        className="w-full justify-start gap-2 bg-transparent"
+                        variant="outline"
+                        onClick={handleNewChat}
+                        disabled={!userId}
+                    >
                         <PlusIcon className="size-4" />
                         New Chat
                     </Button>
@@ -114,19 +226,36 @@ const ChatBotDemo = () => {
                     <SidebarGroup>
                         <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
                         <SidebarGroupContent>
-                            <SidebarMenu>
-                                {chatSessions.map((session) => (
-                                    <SidebarMenuItem key={session.id}>
-                                        <SidebarMenuButton>
-                                            <MessageSquareIcon className="size-4" />
-                                            <div className="flex flex-col items-start gap-0.5 overflow-hidden">
-                                                <span className="truncate font-medium">{session.title}</span>
-                                                <span className="text-xs text-sidebar-foreground/60 truncate">{session.timestamp}</span>
+                            {isLoadingChats ? (
+                                <div className="p-4 text-sm text-muted-foreground">Loading chats...</div>
+                            ) : chats.length === 0 ? (
+                                <div className="p-4 text-sm text-muted-foreground">No chats yet. Create one to get started!</div>
+                            ) : (
+                                <SidebarMenu>
+                                    {chats.map((chat) => (
+                                        <SidebarMenuItem key={chat.id}>
+                                            <div className="relative group">
+                                                <SidebarMenuButton onClick={() => switchToChat(chat.id)} isActive={currentChatId === chat.id}>
+                                                    <MessageSquareIcon className="size-4" />
+                                                    <div className="flex flex-col items-start gap-0.5 overflow-hidden flex-1">
+                                                        <span className="truncate font-medium">{chat.title}</span>
+                                                        <span className="text-xs text-sidebar-foreground/60 truncate">
+                              {new Date(chat.updatedAt).toLocaleDateString()}
+                            </span>
+                                                    </div>
+                                                </SidebarMenuButton>
+                                                <button
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md hover:bg-sidebar-accent opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={(e) => handleDeleteChat(chat.id, e)}
+                                                    aria-label="Delete chat"
+                                                >
+                                                    <Trash2Icon className="size-3" />
+                                                </button>
                                             </div>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
-                            </SidebarMenu>
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            )}
                         </SidebarGroupContent>
                     </SidebarGroup>
                 </SidebarContent>
@@ -138,6 +267,11 @@ const ChatBotDemo = () => {
                         <SidebarTrigger />
                         <div className="flex items-center gap-2">
                             <h1 className="text-lg font-semibold">AI Chatbot</h1>
+                            {currentChatId && (
+                                <span className="text-sm text-muted-foreground">
+                  - {chats.find((c) => c.id === currentChatId)?.title}
+                </span>
+                            )}
                         </div>
                     </header>
 
@@ -155,7 +289,11 @@ const ChatBotDemo = () => {
                                                             .filter((part) => part.type === "source-url")
                                                             .map((part, i) => (
                                                                 <SourcesContent key={`${message.id}-${i}`}>
-                                                                    <Source key={`${message.id}-${i}`} href={part.url} title={part.url} />
+                                                                    <Source
+                                                                        key={`${message.id}-${i}`}
+                                                                        href={(part as any).url}
+                                                                        title={(part as any).url}
+                                                                    />
                                                                 </SourcesContent>
                                                             ))}
                                                     </Sources>
@@ -166,7 +304,7 @@ const ChatBotDemo = () => {
                                                         return (
                                                             <Message key={`${message.id}-${i}`} from={message.role}>
                                                                 <MessageContent>
-                                                                    <Response>{part.text}</Response>
+                                                                    <Response>{(part as any).text}</Response>
                                                                 </MessageContent>
                                                             </Message>
                                                         )
@@ -182,7 +320,7 @@ const ChatBotDemo = () => {
                                                                 }
                                                             >
                                                                 <ReasoningTrigger />
-                                                                <ReasoningContent>{part.text}</ReasoningContent>
+                                                                <ReasoningContent>{(part as any).text}</ReasoningContent>
                                                             </Reasoning>
                                                         )
                                                     default:
@@ -191,18 +329,14 @@ const ChatBotDemo = () => {
                                             })}
                                             {message.role === "assistant" && (
                                                 <Actions className="mt-2">
-                                                    <Action
-                                                        onClick={() => regenerate({ body: { model, webSearch } })}
-                                                        label="Retry"
-                                                        tooltip="Retry"
-                                                    >
+                                                    <Action onClick={handleRegenerate} label="Retry" tooltip="Retry">
                                                         <RefreshCcwIcon className="size-3" />
                                                     </Action>
                                                     <Action
                                                         onClick={() => {
                                                             const textParts = message.parts
                                                                 .filter((part) => part.type === "text")
-                                                                .map((part) => part.text)
+                                                                .map((part) => (part as any).text)
                                                                 .join("\n")
                                                             navigator.clipboard.writeText(textParts)
                                                         }}
@@ -219,7 +353,7 @@ const ChatBotDemo = () => {
                                                         onClick={() => {
                                                             const textParts = message.parts
                                                                 .filter((part) => part.type === "text")
-                                                                .map((part) => part.text)
+                                                                .map((part) => (part as any).text)
                                                                 .join("\n")
                                                             navigator.clipboard.writeText(textParts)
                                                         }}

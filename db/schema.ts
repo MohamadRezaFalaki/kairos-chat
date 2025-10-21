@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, vector, integer, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ============================================
@@ -54,6 +54,34 @@ export const parts = pgTable('parts', {
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+
+// ============================================
+// DOCUMENTS TABLE (Source documents)
+// ============================================
+export const documents = pgTable('documents', {
+    id: serial('id').primaryKey(),
+    title: text('title').notNull(),
+    content: text('content').notNull(),  // Full document content
+    source: text('source'),  // File name or URL
+    metadata: text('metadata'),  // JSON string with extra info
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ============================================
+// DOCUMENT CHUNKS TABLE (Split documents)
+// ============================================
+export const documentChunks = pgTable('document_chunks', {
+    id: serial('id').primaryKey(),
+    documentId: integer('document_id')
+        .notNull()
+        .references(() => documents.id, { onDelete: 'cascade' }),
+    chunkIndex: integer('chunk_index').notNull(),  // Order in document
+    content: text('content').notNull(),  // Chunk text
+    embedding: vector('embedding', { dimensions: 768 }),  // Vector embedding
+    metadata: text('metadata'),  // JSON string
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // ============================================
 // RELATIONS
 // ============================================
@@ -87,3 +115,9 @@ export type NewMessage = typeof messages.$inferInsert;
 
 export type Part = typeof parts.$inferSelect;
 export type NewPart = typeof parts.$inferInsert;
+
+// Types
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;
+export type DocumentChunk = typeof documentChunks.$inferSelect;
+export type NewDocumentChunk = typeof documentChunks.$inferInsert;

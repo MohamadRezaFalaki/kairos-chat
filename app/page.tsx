@@ -82,7 +82,7 @@ const ChatBotDemo = () => {
     const [isLoadingChats, setIsLoadingChats] = useState(true)
 
     const { messages, sendMessage, status, regenerate, setMessages } = useChat()
-
+    console.log(323)
     useEffect(() => {
         const initializeUser = async () => {
             const id = getUserId()

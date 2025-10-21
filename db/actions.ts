@@ -156,11 +156,10 @@ export async function loadChatMessages(chatId: number): Promise<UIMessage[]> {
         const chatMessages = await db.select().from(messages).where(eq(messages.chatId, chatId)).orderBy(messages.createdAt)
 
         const uiMessages: UIMessage[] = []
-
         for (const message of chatMessages) {
+
             // Get parts for this message
             const messageParts = await db.select().from(parts).where(eq(parts.messageId, message.id)).orderBy(parts.partIndex)
-
             const convertedParts: any[] = []
 
             for (const part of messageParts) {
@@ -189,7 +188,6 @@ export async function loadChatMessages(chatId: number): Promise<UIMessage[]> {
                 }
                 // Skip tool parts for Phase 1
             }
-
             uiMessages.push({
                 id: `msg-${message.id}`,
                 role: message.role as "user" | "assistant" | "system",
@@ -197,7 +195,6 @@ export async function loadChatMessages(chatId: number): Promise<UIMessage[]> {
                 createdAt: message.createdAt,
             } as UIMessage)
         }
-
         console.log("✅ Loaded", uiMessages.length, "messages from database")
         return uiMessages
     } catch (error) {

@@ -1,0 +1,109 @@
+
+============================================================
+              PROJECT STRUCTURE
+============================================================
+
+v0/ (root)
+    ├── .gitignore
+    ├── README.md
+    ├── app
+    │   ├── api
+    │   │   └── chat
+    │   │       └── route.ts
+    │   ├── favicon.ico
+    │   ├── globals.css
+    │   ├── layout.tsx
+    │   └── page.tsx
+    ├── components
+    │   ├── ai-elements
+    │   │   ├── actions.tsx
+    │   │   ├── artifact.tsx
+    │   │   ├── branch.tsx
+    │   │   ├── canvas.tsx
+    │   │   ├── chain-of-thought.tsx
+    │   │   ├── code-block.tsx
+    │   │   ├── connection.tsx
+    │   │   ├── context.tsx
+    │   │   ├── controls.tsx
+    │   │   ├── conversation.tsx
+    │   │   ├── edge.tsx
+    │   │   ├── image.tsx
+    │   │   ├── inline-citation.tsx
+    │   │   ├── loader.tsx
+    │   │   ├── message.tsx
+    │   │   ├── node.tsx
+    │   │   ├── open-in-chat.tsx
+    │   │   ├── panel.tsx
+    │   │   ├── prompt-input.tsx
+    │   │   ├── reasoning.tsx
+    │   │   ├── response.tsx
+    │   │   ├── sources.tsx
+    │   │   ├── suggestion.tsx
+    │   │   ├── task.tsx
+    │   │   ├── tool.tsx
+    │   │   ├── toolbar.tsx
+    │   │   └── web-preview.tsx
+    │   └── ui
+    │       ├── avatar.tsx
+    │       ├── badge.tsx
+    │       ├── button.tsx
+    │       ├── card.tsx
+    │       ├── carousel.tsx
+    │       ├── collapsible.tsx
+    │       ├── dropdown-menu.tsx
+    │       ├── hover-card.tsx
+    │       ├── input-group.tsx
+    │       ├── input.tsx
+    │       ├── progress.tsx
+    │       ├── scroll-area.tsx
+    │       ├── select.tsx
+    │       ├── separator.tsx
+    │       ├── sheet.tsx
+    │       ├── sidebar.tsx
+    │       ├── skeleton.tsx
+    │       ├── textarea.tsx
+    │       └── tooltip.tsx
+    ├── components.json
+    ├── db
+    │   ├── actions.ts
+    │   ├── index.ts
+    │   └── schema.ts
+    ├── drizzle
+    │   ├── 0000_solid_mandrill.sql
+    │   ├── 0001_flawless_gargoyle.sql
+    │   ├── 0002_unique_ego.sql
+    │   └── meta
+    │       ├── 0000_snapshot.json
+    │       ├── 0001_snapshot.json
+    │       ├── 0002_snapshot.json
+    │       └── _journal.json
+    ├── drizzle.config.ts
+    ├── eslint.config.mjs
+    ├── extract-structure.js
+    ├── hooks
+    │   ├── use-chat-stream.ts
+    │   └── use-mobile.ts
+    ├── lib
+    │   ├── rag
+    │   │   └── document-processor.ts
+    │   ├── utils
+    │   │   ├── message-conversion.ts
+    │   │   └── user.ts
+    │   └── utils.ts
+    ├── next-env.d.ts
+    ├── next.config.ts
+    ├── package.json
+    ├── postcss.config.mjs
+    ├── public
+    │   ├── file.svg
+    │   ├── globe.svg
+    │   ├── next.svg
+    │   ├── vercel.svg
+    │   └── window.svg
+    ├── scripts
+    │   └── upload-handbook.ts
+    └── tsconfig.json
+
+============================================================
+Generated on: 10/21/2025, 5:02:34 PM
+============================================================

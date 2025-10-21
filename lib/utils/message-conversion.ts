@@ -45,7 +45,6 @@ export function uiMessagesToLangChain(uiMessages: UIMessage[]): BaseMessage[] {
                 console.warn('Unknown message role:', message.role);
         }
     }
-
     return langChainMessages;
 }
 

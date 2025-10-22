@@ -54,20 +54,8 @@ import { useChat } from "@/hooks/use-chat-stream"
 
 const models = [
     {
-        name: "Claude Haiku 3",
+        name: "K1",
         value: "claude-3-haiku-20240307",
-    },
-    {
-        name: "Claude Haiku 3.5",
-        value: "claude-3-5-haiku-latest",
-    },
-    {
-        name: "Claude Sonnet 3.7",
-        value: "claude-3-7-sonnet-latest",
-    },
-    {
-        name: "Claude Opus 4",
-        value: "claude-opus-4-20250514",
     },
 ]
 
@@ -266,7 +254,7 @@ const ChatBotDemo = () => {
                     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
                         <SidebarTrigger />
                         <div className="flex items-center gap-2">
-                            <h1 className="text-lg font-semibold">AI Chatbot</h1>
+                            <h1 className="text-lg font-semibold">KairosGPT</h1>
                             {currentChatId && (
                                 <span className="text-sm text-muted-foreground">
                   - {chats.find((c) => c.id === currentChatId)?.title}
@@ -386,13 +374,13 @@ const ChatBotDemo = () => {
                                                 <PromptInputActionAddAttachments />
                                             </PromptInputActionMenuContent>
                                         </PromptInputActionMenu>
-                                        <PromptInputButton
-                                            variant={webSearch ? "default" : "ghost"}
-                                            onClick={() => setWebSearch(!webSearch)}
-                                        >
-                                            <GlobeIcon size={16} />
-                                            <span>Search</span>
-                                        </PromptInputButton>
+                                        {/*<PromptInputButton*/}
+                                        {/*    variant={webSearch ? "default" : "ghost"}*/}
+                                        {/*    onClick={() => setWebSearch(!webSearch)}*/}
+                                        {/*>*/}
+                                        {/*    <GlobeIcon size={16} />*/}
+                                        {/*    <span>Search</span>*/}
+                                        {/*</PromptInputButton>*/}
                                         <PromptInputModelSelect
                                             onValueChange={(value) => {
                                                 setModel(value)

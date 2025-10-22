@@ -78,7 +78,7 @@ export async function uploadDocument(
 // ============================================
 export async function searchSimilarChunks(
     query: string,
-    topK: number = 3
+    topK: number = 5
 ): Promise<Array<{ content: string; similarity: number }>> {
     try {
         // 1. Generate embedding for query

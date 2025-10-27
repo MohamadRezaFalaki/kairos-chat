@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import type { UIMessage } from "ai"
+import {useState, useCallback} from "react"
+import type {UIMessage} from "ai"
 
 type CustomChatStatus = "idle" | "submitted" | "streaming" | "error"
 
@@ -76,10 +76,10 @@ export function useChat() {
             }
 
             while (true) {
-                const { done, value } = await reader.read()
+                const {done, value} = await reader.read()
                 if (done) break
 
-                const chunk = decoder.decode(value, { stream: true })
+                const chunk = decoder.decode(value, {stream: true})
                 const lines = chunk.split("\n")
 
                 for (const line of lines) {
@@ -132,13 +132,61 @@ export function useChat() {
                             })
                         } else if (parsed.type === "text-end") {
                             currentTextBlockId = null
-                        } else if (parsed.type === "data-toolResult") {
+                        } else if (parsed.type === "data-toolCall") {
+                            console.log("[v0] Tool call:", parsed.data.toolName, parsed.data.state)
 
                             setMessages((prev) => {
                                 const newMessages = [...prev]
                                 const lastMessage = newMessages[newMessages.length - 1]
 
                                 if (lastMessage?.role === "assistant") {
+                                    const existingPartIndex = lastMessage.parts.findIndex(
+                                        (p: any) => p.type === "data-toolCall" && p.data?.id === parsed.data.id
+                                    )
+
+                                    if (existingPartIndex >= 0) {
+                                        lastMessage.parts[existingPartIndex] = {
+                                            type: "data-toolCall",
+                                            data: parsed.data,
+                                        }
+                                    } else {
+                                        lastMessage.parts.push({
+                                            type: "data-toolCall",
+                                            data: parsed.data,
+                                        })
+                                    }
+                                } else {
+                                    newMessages.push({
+                                        ...assistantMessage,
+                                        parts: [
+                                            {
+                                                type: "data-toolCall",
+                                                data: parsed.data,
+                                            },
+                                        ],
+                                    })
+                                }
+
+                                return newMessages
+                            })
+                        } else if (parsed.type === "data-toolResult") {
+                            console.log("[v0] Tool event:", parsed.data.toolName, parsed.data.state)
+
+                            setMessages((prev) => {
+                                const newMessages = [...prev]
+                                const lastMessage = newMessages[newMessages.length - 1]
+
+                                if (lastMessage?.role === "assistant") {
+                                    // ✅ FIX: Remove the loading part first
+                                    const toolCallIndex = lastMessage.parts.findIndex(
+                                        (p: any) => p.type === "data-toolCall" && p.data?.id === parsed.data.id
+                                    )
+
+                                    if (toolCallIndex >= 0) {
+                                        lastMessage.parts.splice(toolCallIndex, 1)
+                                    }
+
+                                    // Then handle the result part
                                     const existingPartIndex = lastMessage.parts.findIndex(
                                         (p: any) => p.type === "data-toolResult" && p.data?.id === parsed.data.id
                                     )
@@ -169,6 +217,8 @@ export function useChat() {
                                 return newMessages
                             })
                         }
+
+
                     } catch (e) {
                         console.error("[v0] Error parsing stream chunk:", e)
                     }

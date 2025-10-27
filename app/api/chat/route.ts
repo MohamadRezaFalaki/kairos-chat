@@ -10,6 +10,7 @@ import {searchSimilarChunks} from '@/lib/rag/document-processor';
 import {SystemMessage, HumanMessage, AIMessage, ToolMessage} from '@langchain/core/messages';
 import {MultiServerMCPClient} from '@langchain/mcp-adapters';
 import path from 'path';
+import {concat} from "@langchain/core/utils/stream";
 
 const SYSTEM_PROMPT = `You are KAIROS, an AI trading assistant designed to help traders and investors.
 
@@ -57,6 +58,46 @@ You have been trained with the official KAIROS User Handbook documentation. This
    - Be helpful, professional, and concise
    - If you genuinely don't know something: "I don't have information about that specific aspect. Let me help with what I do know about KAIROS."
    - Never speculate or make up information`;
+
+async function streamModelResponse(
+    stream: any,
+    writer: any,
+    textBlockId: string
+): Promise<{ fullText: string; toolCalls: any[] }> {
+    let fullText = '';
+    let accumulated: any = undefined;
+
+    for await (const chunk of stream) {
+        accumulated = accumulated === undefined ? chunk : concat(accumulated, chunk);
+
+        if (chunk.content) {
+            let textToAdd = '';
+
+            if (typeof chunk.content === 'string') {
+                textToAdd = chunk.content;
+            } else if (Array.isArray(chunk.content)) {
+                for (const block of chunk.content) {
+                    if (block.type === 'text' && block.text) {
+                        textToAdd += block.text;
+                    }
+                }
+            }
+
+            if (textToAdd) {
+                fullText += textToAdd;
+                writer.write({
+                    type: 'text-delta',
+                    id: textBlockId,
+                    delta: textToAdd,
+                });
+            }
+        }
+    }
+
+    const toolCalls = accumulated?.tool_calls || [];
+
+    return {fullText, toolCalls};
+}
 
 export async function POST(req: Request) {
     try {
@@ -133,13 +174,26 @@ export async function POST(req: Request) {
                         temperature: 0.7,
                     }).bindTools(tools);
 
-                    const response = await model.invoke(messagesWithContext);
+                    const stream = await model.stream(messagesWithContext);
 
                     const textBlockId = `text-${Date.now()}`;
-                    let fullResponse = '';
 
-                    if (response.tool_calls && response.tool_calls.length > 0) {
-                        for (const toolCall of response.tool_calls) {
+                    writer.write({
+                        type: 'text-start',
+                        id: textBlockId,
+                    });
+
+                    const {fullText, toolCalls} = await streamModelResponse(stream, writer, textBlockId);
+
+                    writer.write({
+                        type: 'text-end',
+                        id: textBlockId,
+                    });
+
+                    let fullResponse = fullText;
+                    console.log("fullResponse1", fullResponse);
+                    if (toolCalls && toolCalls.length > 0) {
+                        for (const toolCall of toolCalls) {
                             writer.write({
                                 type: 'data-toolCall',
                                 data: {
@@ -153,7 +207,7 @@ export async function POST(req: Request) {
 
                         const toolMessages = [];
 
-                        for (const toolCall of response.tool_calls) {
+                        for (const toolCall of toolCalls) {
 
                             try {
                                 const tool = tools.find((t: any) => t.name === toolCall.name);
@@ -170,7 +224,7 @@ export async function POST(req: Request) {
                                     });
 
                                     const result = await tool.invoke(toolCall.args);
-
+                                    console.log("-result-", result)
                                     toolMessages.push({
                                         role: 'tool',
                                         content: result,
@@ -212,8 +266,8 @@ export async function POST(req: Request) {
                         const finalMessages = [
                             ...messagesWithContext,
                             new AIMessage({
-                                content: response.content,
-                                tool_calls: response.tool_calls,
+                                content: fullResponse,
+                                tool_calls: toolCalls,
                             }),
                             ...toolMessages.map((tm: any) => new ToolMessage({
                                 content: tm.content,
@@ -221,49 +275,30 @@ export async function POST(req: Request) {
                             })),
                         ];
 
-                        const finalResponse = await model.invoke(finalMessages);
+                        const finalStream = await model.stream(finalMessages);
+
+                        const finalTextBlockId = `text-${Date.now()}`;
 
                         writer.write({
                             type: 'text-start',
-                            id: textBlockId,
+                            id: finalTextBlockId,
                         });
 
-                        fullResponse = typeof finalResponse.content === 'string'
-                            ? finalResponse.content
-                            : JSON.stringify(finalResponse.content);
-
-                        writer.write({
-                            type: 'text-delta',
-                            id: textBlockId,
-                            delta: fullResponse,
-                        });
+                        const {fullText: finalText} = await streamModelResponse(
+                            finalStream,
+                            writer,
+                            finalTextBlockId
+                        );
 
                         writer.write({
                             type: 'text-end',
-                            id: textBlockId,
+                            id: finalTextBlockId,
                         });
 
-                    } else {
+                        fullResponse = finalText;
 
-                        writer.write({
-                            type: 'text-start',
-                            id: textBlockId,
-                        });
+                        console.log("fullResponse2", fullResponse);
 
-                        fullResponse = typeof response.content === 'string'
-                            ? response.content
-                            : JSON.stringify(response.content);
-
-                        writer.write({
-                            type: 'text-delta',
-                            id: textBlockId,
-                            delta: fullResponse,
-                        });
-
-                        writer.write({
-                            type: 'text-end',
-                            id: textBlockId,
-                        });
                     }
 
                     const assistantMessage: UIMessage = {

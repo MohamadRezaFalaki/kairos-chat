@@ -177,7 +177,6 @@ export function useChat() {
                                 const lastMessage = newMessages[newMessages.length - 1]
 
                                 if (lastMessage?.role === "assistant") {
-                                    // ✅ FIX: Remove the loading part first
                                     const toolCallIndex = lastMessage.parts.findIndex(
                                         (p: any) => p.type === "data-toolCall" && p.data?.id === parsed.data.id
                                     )

@@ -155,38 +155,38 @@ const ChatBotDemo = () => {
     }
 
     const handleSubmit = async (message: PromptInputMessage) => {
-        const hasText = Boolean(message.text)
-        const hasAttachments = false
-
-        if (!hasText) {
+        if (!userId) {
+            console.error("[v0] No user ID available")
             return
         }
 
-        // Create chat if none exists
-        let chatId = currentChatId
-        if (!chatId) {
+        // If no current chat, create one
+        if (!currentChatId) {
             const newChat = await createChat(userId, "New Chat")
             setChats([newChat, ...chats])
             setCurrentChatId(newChat.id)
-            chatId = newChat.id
+            console.log("[v0] Created new chat for message:", newChat.id)
         }
 
+        console.log("[v0] Sending message:", message)
+
         await sendMessage(
+            { text: message.text ?? "" }, // Provides empty string if undefined
             {
-                text: message.text || "Sent with attachments",
-            },
-            {
-                sessionId: chatId.toString(),
+                sessionId: currentChatId?.toString() || "0",
                 userId: userId,
                 model: model,
                 webSearch: webSearch,
-            },
+            }
         )
+
         setInput("")
     }
 
     const handleRegenerate = async () => {
-        if (!currentChatId) return
+        if (!currentChatId || !userId) return
+
+        console.log("[v0] Regenerating last response")
 
         await regenerate({
             sessionId: currentChatId.toString(),
@@ -198,63 +198,60 @@ const ChatBotDemo = () => {
 
     return (
         <SidebarProvider>
-            <Sidebar collapsible="offcanvas">
-                <SidebarHeader className="border-b border-sidebar-border">
-                    <Button
-                        className="w-full justify-start gap-2 bg-transparent"
-                        variant="outline"
-                        onClick={handleNewChat}
-                        disabled={!userId}
-                    >
-                        <PlusIcon className="size-4" />
-                        New Chat
-                    </Button>
+            <Sidebar>
+                <SidebarHeader>
+                    <div className="flex items-center justify-between p-2">
+                        <h2 className="text-lg font-semibold">KAIROS</h2>
+                        <Button size="sm" variant="ghost" onClick={handleNewChat}>
+                            <PlusIcon className="size-4" />
+                        </Button>
+                    </div>
                 </SidebarHeader>
                 <SidebarContent>
                     <SidebarGroup>
-                        <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
+                        <SidebarGroupLabel>Chats</SidebarGroupLabel>
                         <SidebarGroupContent>
-                            {isLoadingChats ? (
-                                <div className="p-4 text-sm text-muted-foreground">Loading chats...</div>
-                            ) : chats.length === 0 ? (
-                                <div className="p-4 text-sm text-muted-foreground">No chats yet. Create one to get started!</div>
-                            ) : (
-                                <SidebarMenu>
-                                    {chats.map((chat) => (
+                            <SidebarMenu>
+                                {isLoadingChats ? (
+                                    <div className="p-4 text-center text-sm text-muted-foreground">Loading chats...</div>
+                                ) : chats.length === 0 ? (
+                                    <div className="p-4 text-center text-sm text-muted-foreground">No chats yet</div>
+                                ) : (
+                                    chats.map((chat) => (
                                         <SidebarMenuItem key={chat.id}>
-                                            <div className="relative group">
-                                                <SidebarMenuButton onClick={() => switchToChat(chat.id)} isActive={currentChatId === chat.id}>
-                                                    <MessageSquareIcon className="size-4" />
-                                                    <div className="flex flex-col items-start gap-0.5 overflow-hidden flex-1">
-                                                        <span className="truncate font-medium">{chat.title}</span>
-                                                        <span className="text-xs text-sidebar-foreground/60 truncate">
-                              {new Date(chat.updatedAt).toLocaleDateString()}
-                            </span>
-                                                    </div>
-                                                </SidebarMenuButton>
-                                                <button
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md hover:bg-sidebar-accent opacity-0 group-hover:opacity-100 transition-opacity"
+                                            <SidebarMenuButton
+                                                onClick={() => switchToChat(chat.id)}
+                                                isActive={currentChatId === chat.id}
+                                                className="w-full justify-between group"
+                                            >
+                                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                    <MessageSquareIcon className="size-4 shrink-0" />
+                                                    <span className="truncate">{chat.title}</span>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="opacity-0 group-hover:opacity-100 shrink-0"
                                                     onClick={(e) => handleDeleteChat(chat.id, e)}
-                                                    aria-label="Delete chat"
                                                 >
                                                     <Trash2Icon className="size-3" />
-                                                </button>
-                                            </div>
+                                                </Button>
+                                            </SidebarMenuButton>
                                         </SidebarMenuItem>
-                                    ))}
-                                </SidebarMenu>
-                            )}
+                                    ))
+                                )}
+                            </SidebarMenu>
                         </SidebarGroupContent>
                     </SidebarGroup>
                 </SidebarContent>
             </Sidebar>
 
-            <SidebarInset>
-                <div className="flex flex-col h-screen">
-                    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-                        <SidebarTrigger />
+            <SidebarInset className="flex flex-col h-screen">
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-6">
                         <div className="flex items-center gap-2">
-                            <h1 className="text-lg font-semibold">KairosGPT</h1>
+                            <SidebarTrigger />
+                            <h1 className="text-lg font-semibold">Chat</h1>
                             {currentChatId && (
                                 <span className="text-sm text-muted-foreground">
                   - {chats.find((c) => c.id === currentChatId)?.title}
@@ -311,6 +308,74 @@ const ChatBotDemo = () => {
                                                                 <ReasoningContent>{(part as any).text}</ReasoningContent>
                                                             </Reasoning>
                                                         )
+
+                                                    case "data-toolCall":
+                                                        return (
+                                                            <div key={`${message.id}-${i}`} className="my-2">
+                                                                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        {((part as any).data.state === 'calling' || (part as any).data.state === 'executing') && (
+                                                                            <Loader className="size-4" />
+                                                                        )}
+                                                                        <span className="font-medium">
+                                                                            🔧 Tool: {(part as any).data.toolName}
+                                                                        </span>
+                                                                    </div>
+                                                                    {(part as any).data.state === 'calling' && (
+                                                                        <span className="text-xs">Preparing...</span>
+                                                                    )}
+                                                                    {(part as any).data.state === 'executing' && (
+                                                                        <span className="text-xs">Executing...</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )
+
+                                                    case "data-toolResult":
+                                                        return (
+                                                            <div key={`${message.id}-${i}`} className="my-2">
+                                                                <details className="group">
+                                                                    <summary className="flex items-center gap-2 text-sm cursor-pointer bg-muted/30 rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                                                                        <span className="font-medium">
+                                                                            {(part as any).data.state === 'complete' ? '✅' : '❌'}
+                                                                            {' '}{(part as any).data.toolName}
+                                                                        </span>
+                                                                        {(part as any).data.state === 'complete' && (
+                                                                            <span className="text-xs text-muted-foreground">
+                                                                                Click to view result
+                                                                            </span>
+                                                                        )}
+                                                                    </summary>
+                                                                    <div className="mt-2 p-3 bg-muted/20 rounded-lg">
+                                                                        <div className="text-xs space-y-2">
+                                                                            <div>
+                                                                                <div className="font-semibold mb-1">Input:</div>
+                                                                                <pre className="bg-background p-2 rounded overflow-x-auto text-xs">
+                                                                                    {JSON.stringify((part as any).data.toolInput, null, 2)}
+                                                                                </pre>
+                                                                            </div>
+                                                                            {(part as any).data.state === 'complete' && (
+                                                                                <div>
+                                                                                    <div className="font-semibold mb-1">Result:</div>
+                                                                                    <pre className="bg-background p-2 rounded overflow-x-auto max-h-64 overflow-y-auto text-xs">
+                                                                                        {(part as any).data.toolResult}
+                                                                                    </pre>
+                                                                                </div>
+                                                                            )}
+                                                                            {(part as any).data.state === 'error' && (
+                                                                                <div>
+                                                                                    <div className="font-semibold mb-1 text-destructive">Error:</div>
+                                                                                    <pre className="bg-destructive/10 text-destructive p-2 rounded text-xs">
+                                                                                        {(part as any).data.error}
+                                                                                    </pre>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </details>
+                                                            </div>
+                                                        )
+
                                                     default:
                                                         return null
                                                 }
@@ -354,8 +419,27 @@ const ChatBotDemo = () => {
                                             )}
                                         </div>
                                     ))}
-                                    {status === "submitted" && <Loader />}
-                                </ConversationContent>
+                                    {status === "submitted" && (
+                                        <Message from="assistant">
+                                            <MessageContent>
+                                                <div className="flex items-center gap-3 text-muted-foreground">
+                                                    <Loader size={20} />
+                                                    <span className="text-sm">Kairos is thinking...</span>
+                                                </div>
+                                            </MessageContent>
+                                        </Message>
+                                    )}
+
+                                    {status === "streaming" && messages.length > 0 && messages[messages.length - 1].role === "assistant" && messages[messages.length - 1].parts.length === 0 && (
+                                        <Message from="assistant">
+                                            <MessageContent>
+                                                <div className="flex items-center gap-3 text-muted-foreground">
+                                                    <Loader size={20} />
+                                                    <span className="text-sm">Processing...</span>
+                                                </div>
+                                            </MessageContent>
+                                        </Message>
+                                    )}                                </ConversationContent>
                                 <ConversationScrollButton />
                             </Conversation>
 

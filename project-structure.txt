@@ -90,10 +90,15 @@ v0/ (root)
     │   │   ├── message-conversion.ts
     │   │   └── user.ts
     │   └── utils.ts
+    ├── mcp-server
+    │   ├── butterfly-server.ts
+    │   ├── test-mcp-server.js
+    │   └── tsconfig.json
     ├── next-env.d.ts
     ├── next.config.ts
     ├── package.json
     ├── postcss.config.mjs
+    ├── project-structure.txt
     ├── public
     │   ├── file.svg
     │   ├── globe.svg
@@ -106,5 +111,5 @@ v0/ (root)
     └── tsconfig.json
 
 ============================================================
-Generated on: 10/23/2025, 7:00:17 PM
+Generated on: 10/26/2025, 12:40:55 PM
 ============================================================

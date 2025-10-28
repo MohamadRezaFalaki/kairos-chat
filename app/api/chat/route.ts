@@ -191,7 +191,9 @@ export async function POST(req: Request) {
                     });
 
                     let fullResponse = fullText;
-                    console.log("fullResponse1", fullResponse);
+
+                    const toolMessages = [];
+
                     if (toolCalls && toolCalls.length > 0) {
                         for (const toolCall of toolCalls) {
                             writer.write({
@@ -204,8 +206,6 @@ export async function POST(req: Request) {
                                 },
                             });
                         }
-
-                        const toolMessages = [];
 
                         for (const toolCall of toolCalls) {
 
@@ -224,7 +224,7 @@ export async function POST(req: Request) {
                                     });
 
                                     const result = await tool.invoke(toolCall.args);
-                                    console.log("-result-", result)
+
                                     toolMessages.push({
                                         role: 'tool',
                                         content: result,
@@ -296,20 +296,47 @@ export async function POST(req: Request) {
                         });
 
                         fullResponse = finalText;
-
-                        console.log("fullResponse2", fullResponse);
-
                     }
+
+                    const assistantParts: any[] = [];
+
+                    if (toolCalls && toolCalls.length > 0) {
+                        for (const toolCall of toolCalls) {
+                            assistantParts.push({
+                                type: 'data-toolCall',
+                                data: {
+                                    id: toolCall.id,
+                                    toolName: toolCall.name,
+                                    toolInput: toolCall.args,
+                                    state: 'complete',
+                                },
+                            });
+
+                            const toolMessage = toolMessages.find((tm: any) => tm.tool_call_id === toolCall.id);
+                            if (toolMessage) {
+                                assistantParts.push({
+                                    type: 'data-toolResult',
+                                    data: {
+                                        id: toolCall.id,
+                                        toolName: toolCall.name,
+                                        toolInput: toolCall.args,
+                                        toolResult: toolMessage.content,
+                                        state: 'complete',
+                                    },
+                                });
+                            }
+                        }
+                    }
+
+                    assistantParts.push({
+                        type: 'text',
+                        text: fullResponse,
+                    });
 
                     const assistantMessage: UIMessage = {
                         id: `msg-${Date.now()}`,
                         role: 'assistant',
-                        parts: [
-                            {
-                                type: 'text',
-                                text: fullResponse,
-                            },
-                        ],
+                        parts: assistantParts,
                     };
 
                     await saveMessages(chat.id, [newUserMessage, assistantMessage]);

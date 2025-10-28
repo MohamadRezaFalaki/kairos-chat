@@ -170,7 +170,6 @@ export function useChat() {
                                 return newMessages
                             })
                         } else if (parsed.type === "data-toolResult") {
-                            console.log("[v0] Tool event:", parsed.data.toolName, parsed.data.state)
 
                             setMessages((prev) => {
                                 const newMessages = [...prev]

@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
-import { Message, MessageContent } from "@/components/ai-elements/message"
+import {Conversation, ConversationContent, ConversationScrollButton} from "@/components/ai-elements/conversation"
+import {Message, MessageContent} from "@/components/ai-elements/message"
 import {
     PromptInput,
     PromptInputActionAddAttachments,
@@ -25,13 +25,13 @@ import {
     PromptInputToolbar,
     PromptInputTools,
 } from "@/components/ai-elements/prompt-input"
-import { Action, Actions } from "@/components/ai-elements/actions"
-import { useState, useEffect } from "react"
-import { Response } from "@/components/ai-elements/response"
-import { CopyIcon, GlobeIcon, RefreshCcwIcon, MessageSquareIcon, PlusIcon, Trash2Icon } from "lucide-react"
-import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources"
-import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning"
-import { Loader } from "@/components/ai-elements/loader"
+import {Action, Actions} from "@/components/ai-elements/actions"
+import {useState, useEffect} from "react"
+import {Response} from "@/components/ai-elements/response"
+import {CopyIcon, GlobeIcon, RefreshCcwIcon, MessageSquareIcon, PlusIcon, Trash2Icon} from "lucide-react"
+import {Source, Sources, SourcesContent, SourcesTrigger} from "@/components/ai-elements/sources"
+import {Reasoning, ReasoningContent, ReasoningTrigger} from "@/components/ai-elements/reasoning"
+import {Loader} from "@/components/ai-elements/loader"
 import {
     Sidebar,
     SidebarContent,
@@ -46,11 +46,11 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { getUserId } from "@/lib/utils/user"
-import { getUserChats, createChat, deleteChat, loadChatMessages } from "@/db/actions"
-import type { Chat } from "@/db/schema"
-import { useChat } from "@/hooks/use-chat-stream"
+import {Button} from "@/components/ui/button"
+import {getUserId} from "@/lib/utils/user"
+import {getUserChats, createChat, deleteChat, loadChatMessages} from "@/db/actions"
+import type {Chat} from "@/db/schema"
+import {useChat} from "@/hooks/use-chat-stream"
 
 const models = [
     {
@@ -69,7 +69,7 @@ const ChatBotDemo = () => {
     const [currentChatId, setCurrentChatId] = useState<number | null>(null)
     const [isLoadingChats, setIsLoadingChats] = useState(true)
 
-    const { messages, sendMessage, status, regenerate, setMessages } = useChat()
+    const {messages, sendMessage, status, regenerate, setMessages} = useChat()
     useEffect(() => {
         const initializeUser = async () => {
             const id = getUserId()
@@ -170,7 +170,7 @@ const ChatBotDemo = () => {
         console.log("[v0] Sending message:", message)
 
         await sendMessage(
-            { text: message.text ?? "" }, // Provides empty string if undefined
+            {text: message.text ?? ""}, // Provides empty string if undefined
             {
                 sessionId: currentChatId?.toString() || "0",
                 userId: userId,
@@ -202,7 +202,7 @@ const ChatBotDemo = () => {
                     <div className="flex items-center justify-between p-2">
                         <h2 className="text-lg font-semibold">KAIROS</h2>
                         <Button size="sm" variant="ghost" onClick={handleNewChat}>
-                            <PlusIcon className="size-4" />
+                            <PlusIcon className="size-4"/>
                         </Button>
                     </div>
                 </SidebarHeader>
@@ -212,7 +212,8 @@ const ChatBotDemo = () => {
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 {isLoadingChats ? (
-                                    <div className="p-4 text-center text-sm text-muted-foreground">Loading chats...</div>
+                                    <div className="p-4 text-center text-sm text-muted-foreground">Loading
+                                        chats...</div>
                                 ) : chats.length === 0 ? (
                                     <div className="p-4 text-center text-sm text-muted-foreground">No chats yet</div>
                                 ) : (
@@ -224,7 +225,7 @@ const ChatBotDemo = () => {
                                                 className="w-full justify-between group"
                                             >
                                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                    <MessageSquareIcon className="size-4 shrink-0" />
+                                                    <MessageSquareIcon className="size-4 shrink-0"/>
                                                     <span className="truncate">{chat.title}</span>
                                                 </div>
                                                 <Button
@@ -233,7 +234,7 @@ const ChatBotDemo = () => {
                                                     className="opacity-0 group-hover:opacity-100 shrink-0"
                                                     onClick={(e) => handleDeleteChat(chat.id, e)}
                                                 >
-                                                    <Trash2Icon className="size-3" />
+                                                    <Trash2Icon className="size-3"/>
                                                 </Button>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
@@ -249,7 +250,7 @@ const ChatBotDemo = () => {
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-6">
                         <div className="flex items-center gap-2">
-                            <SidebarTrigger />
+                            <SidebarTrigger/>
                             <h1 className="text-lg font-semibold">Chat</h1>
                             {currentChatId && (
                                 <span className="text-sm text-muted-foreground">
@@ -268,7 +269,8 @@ const ChatBotDemo = () => {
                                             {message.role === "assistant" &&
                                                 message.parts.filter((part) => part.type === "source-url").length > 0 && (
                                                     <Sources>
-                                                        <SourcesTrigger count={message.parts.filter((part) => part.type === "source-url").length} />
+                                                        <SourcesTrigger
+                                                            count={message.parts.filter((part) => part.type === "source-url").length}/>
                                                         {message.parts
                                                             .filter((part) => part.type === "source-url")
                                                             .map((part, i) => (
@@ -303,75 +305,62 @@ const ChatBotDemo = () => {
                                                                     message.id === messages.at(-1)?.id
                                                                 }
                                                             >
-                                                                <ReasoningTrigger />
+                                                                <ReasoningTrigger/>
                                                                 <ReasoningContent>{(part as any).text}</ReasoningContent>
                                                             </Reasoning>
                                                         )
 
-                                                    case "data-toolCall":
-                                                        return (
-                                                            <div key={`${message.id}-${i}`} className="my-2">
-                                                                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                                                                    <div className="flex items-center gap-2">
-                                                                        {((part as any).data.state === 'calling' || (part as any).data.state === 'executing') && (
-                                                                            <Loader className="size-4" />
-                                                                        )}
-                                                                        <span className="font-medium">
-                                                                            🔧 Tool: {(part as any).data.toolName}
-                                                                        </span>
-                                                                    </div>
-                                                                    {(part as any).data.state === 'calling' && (
-                                                                        <span className="text-xs">Preparing...</span>
-                                                                    )}
-                                                                    {(part as any).data.state === 'executing' && (
-                                                                        <span className="text-xs">Executing...</span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        )
+                                                    // case "data-toolCall":
+                                                    //     return (
+                                                    //         <div key={`${message.id}-${i}`} className="my-2">
+                                                    //             <div
+                                                    //                 className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                                                    //                 <div className="flex items-center gap-2">
+                                                    //                     {((part as any).data.state === 'calling' || (part as any).data.state === 'executing') && (
+                                                    //                         <Loader className="size-4"/>
+                                                    //                     )}
+                                                    //                     <span className="font-medium">
+                                                    //                         🔧 Tool: {(part as any).data.toolName}
+                                                    //                     </span>
+                                                    //                 </div>
+                                                    //                 {(part as any).data.state === 'calling' && (
+                                                    //                     <span className="text-xs">Preparing...</span>
+                                                    //                 )}
+                                                    //                 {(part as any).data.state === 'executing' && (
+                                                    //                     <span className="text-xs">Executing...</span>
+                                                    //                 )}
+                                                    //             </div>
+                                                    //         </div>
+                                                    //     )
 
                                                     case "data-toolResult":
                                                         return (
                                                             <div key={`${message.id}-${i}`} className="my-2">
-                                                                <details className="group">
-                                                                    <summary className="flex items-center gap-2 text-sm cursor-pointer bg-muted/30 rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                                                                        <span className="font-medium">
-                                                                            {(part as any).data.state === 'complete' ? '✅' : '❌'}
-                                                                            {' '}{(part as any).data.toolName}
-                                                                        </span>
-                                                                        {(part as any).data.state === 'complete' && (
-                                                                            <span className="text-xs text-muted-foreground">
-                                                                                Click to view result
-                                                                            </span>
-                                                                        )}
-                                                                    </summary>
-                                                                    <div className="mt-2 p-3 bg-muted/20 rounded-lg">
-                                                                        <div className="text-xs space-y-2">
-                                                                            <div>
-                                                                                <div className="font-semibold mb-1">Input:</div>
-                                                                                <pre className="bg-background p-2 rounded overflow-x-auto text-xs">
-                                                                                    {JSON.stringify((part as any).data.toolInput, null, 2)}
-                                                                                </pre>
-                                                                            </div>
-                                                                            {(part as any).data.state === 'complete' && (
-                                                                                <div>
-                                                                                    <div className="font-semibold mb-1">Result:</div>
-                                                                                    <pre className="bg-background p-2 rounded overflow-x-auto max-h-64 overflow-y-auto text-xs">
-                                                                                        {(part as any).data.toolResult}
-                                                                                    </pre>
-                                                                                </div>
-                                                                            )}
-                                                                            {(part as any).data.state === 'error' && (
-                                                                                <div>
-                                                                                    <div className="font-semibold mb-1 text-destructive">Error:</div>
-                                                                                    <pre className="bg-destructive/10 text-destructive p-2 rounded text-xs">
-                                                                                        {(part as any).data.error}
-                                                                                    </pre>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
+                                                                <div className="rounded-lg border bg-muted/50 p-4">
+                                                                    <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-medium">
+                        ✅ {(part as any).data.toolName}
+                    </span>
                                                                     </div>
-                                                                </details>
+
+                                                                    {/* Input */}
+                                                                    <div className="mb-2">
+                                                                        <p className="text-xs text-muted-foreground mb-1">Input:</p>
+                                                                        <pre
+                                                                            className="text-xs bg-background p-2 rounded overflow-auto">
+                        {JSON.stringify((part as any).data.toolInput, null, 2)}
+                    </pre>
+                                                                    </div>
+
+                                                                    {/* Output - PROPERLY STRINGIFIED */}
+                                                                    <div>
+                                                                        <p className="text-xs text-muted-foreground mb-1">Result:</p>
+                                                                        <pre
+                                                                            className="text-xs bg-background p-2 rounded overflow-auto max-h-64">
+                        {JSON.stringify((part as any).data.toolResult, null, 2)}
+                    </pre>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         )
 
@@ -382,7 +371,7 @@ const ChatBotDemo = () => {
                                             {message.role === "assistant" && (
                                                 <Actions className="mt-2">
                                                     <Action onClick={handleRegenerate} label="Retry" tooltip="Retry">
-                                                        <RefreshCcwIcon className="size-3" />
+                                                        <RefreshCcwIcon className="size-3"/>
                                                     </Action>
                                                     <Action
                                                         onClick={() => {
@@ -395,7 +384,7 @@ const ChatBotDemo = () => {
                                                         label="Copy"
                                                         tooltip="Copy"
                                                     >
-                                                        <CopyIcon className="size-3" />
+                                                        <CopyIcon className="size-3"/>
                                                     </Action>
                                                 </Actions>
                                             )}
@@ -412,7 +401,7 @@ const ChatBotDemo = () => {
                                                         label="Copy"
                                                         tooltip="Copy"
                                                     >
-                                                        <CopyIcon className="size-3" />
+                                                        <CopyIcon className="size-3"/>
                                                     </Action>
                                                 </Actions>
                                             )}
@@ -422,7 +411,7 @@ const ChatBotDemo = () => {
                                         <Message from="assistant">
                                             <MessageContent>
                                                 <div className="flex items-center gap-3 text-muted-foreground">
-                                                    <Loader size={20} />
+                                                    <Loader size={20}/>
                                                     <span className="text-sm">Kairos is thinking...</span>
                                                 </div>
                                             </MessageContent>
@@ -433,28 +422,28 @@ const ChatBotDemo = () => {
                                         <Message from="assistant">
                                             <MessageContent>
                                                 <div className="flex items-center gap-3 text-muted-foreground">
-                                                    <Loader size={20} />
+                                                    <Loader size={20}/>
                                                     <span className="text-sm">Processing...</span>
                                                 </div>
                                             </MessageContent>
                                         </Message>
                                     )}                                </ConversationContent>
-                                <ConversationScrollButton />
+                                <ConversationScrollButton/>
                             </Conversation>
 
                             <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
                                 <PromptInputBody>
                                     <PromptInputAttachments>
-                                        {(attachment) => <PromptInputAttachment data={attachment} />}
+                                        {(attachment) => <PromptInputAttachment data={attachment}/>}
                                     </PromptInputAttachments>
-                                    <PromptInputTextarea onChange={(e) => setInput(e.target.value)} value={input} />
+                                    <PromptInputTextarea onChange={(e) => setInput(e.target.value)} value={input}/>
                                 </PromptInputBody>
                                 <PromptInputToolbar>
                                     <PromptInputTools>
                                         <PromptInputActionMenu>
-                                            <PromptInputActionMenuTrigger />
+                                            <PromptInputActionMenuTrigger/>
                                             <PromptInputActionMenuContent>
-                                                <PromptInputActionAddAttachments />
+                                                <PromptInputActionAddAttachments/>
                                             </PromptInputActionMenuContent>
                                         </PromptInputActionMenu>
                                         {/*<PromptInputButton*/}
@@ -471,7 +460,7 @@ const ChatBotDemo = () => {
                                             value={model}
                                         >
                                             <PromptInputModelSelectTrigger>
-                                                <PromptInputModelSelectValue />
+                                                <PromptInputModelSelectValue/>
                                             </PromptInputModelSelectTrigger>
                                             <PromptInputModelSelectContent>
                                                 {models.map((model) => (
@@ -482,7 +471,7 @@ const ChatBotDemo = () => {
                                             </PromptInputModelSelectContent>
                                         </PromptInputModelSelect>
                                     </PromptInputTools>
-                                    <PromptInputSubmit disabled={!input && !status} status={status} />
+                                    <PromptInputSubmit disabled={!input && !status} status={status}/>
                                 </PromptInputToolbar>
                             </PromptInput>
                         </div>

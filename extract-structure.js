@@ -1,5 +1,10 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Required for __dirname / __filename equivalents in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Directories/files to ignore
 const IGNORE_LIST = [
@@ -30,9 +35,7 @@ function getDirectoryStructure(dirPath, prefix = '', isLast = true) {
     }
 
     // If it's a file, return
-    if (stats.isFile()) {
-        return result;
-    }
+    if (stats.isFile()) return result;
 
     // If it's a directory, process its contents
     try {
@@ -43,7 +46,6 @@ function getDirectoryStructure(dirPath, prefix = '', isLast = true) {
             const itemPath = path.join(dirPath, item);
             const isLastItem = index === filteredItems.length - 1;
             const newPrefix = prefix + (isLast ? '    ' : '│   ');
-
             result += getDirectoryStructure(itemPath, newPrefix, isLastItem);
         });
     } catch (error) {
@@ -62,7 +64,6 @@ console.log('\n📁 Extracting Project Structure...\n');
 try {
     const structure = getDirectoryStructure(path.resolve(projectPath));
 
-    // Create formatted output for file
     const fileContent = `
 ${'='.repeat(60)}
               PROJECT STRUCTURE
@@ -74,13 +75,11 @@ Generated on: ${new Date().toLocaleString()}
 ${'='.repeat(60)}
 `;
 
-    // Save to file
     fs.writeFileSync(outputFile, fileContent, 'utf8');
 
     console.log(`✅ SUCCESS! Structure extracted to: ${outputFile}`);
     console.log(`📂 Total lines: ${structure.split('\n').length - 1}`);
     console.log(`\n💡 Now you can upload "${outputFile}" to share the structure!\n`);
-
 } catch (error) {
     console.error('❌ Error:', error.message);
 }

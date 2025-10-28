@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import type { UIMessage } from "ai"
+import {useState, useCallback} from "react"
+import type {UIMessage} from "ai"
 
 type CustomChatStatus = "idle" | "submitted" | "streaming" | "error"
 
@@ -24,7 +24,6 @@ export function useChat() {
     const [status, setStatus] = useState<CustomChatStatus>("idle")
 
     const sendMessage = useCallback(async (message: { text: string }, options: SendMessageOptions) => {
-        // Create user message
         const userMessage: UIMessage = {
             id: `msg-${Date.now()}`,
             role: "user",
@@ -36,12 +35,10 @@ export function useChat() {
             ],
         }
 
-        // Add user message to UI immediately
         setMessages((prev) => [...prev, userMessage])
         setStatus("submitted")
 
         try {
-            // Send to backend
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: {
@@ -62,7 +59,6 @@ export function useChat() {
 
             setStatus("streaming")
 
-            // Create assistant message placeholder
             const assistantMessage: UIMessage = {
                 id: `msg-${Date.now()}-assistant`,
                 role: "assistant",
@@ -72,7 +68,6 @@ export function useChat() {
             let currentTextBlockId: string | null = null
             let currentTextContent = ""
 
-            // Read stream
             const reader = response.body?.getReader()
             const decoder = new TextDecoder()
 
@@ -81,16 +76,16 @@ export function useChat() {
             }
 
             while (true) {
-                const { done, value } = await reader.read()
+                const {done, value} = await reader.read()
                 if (done) break
 
-                const chunk = decoder.decode(value, { stream: true })
+                const chunk = decoder.decode(value, {stream: true})
                 const lines = chunk.split("\n")
 
                 for (const line of lines) {
                     if (!line.trim() || !line.startsWith("data: ")) continue
 
-                    const data = line.slice(6) // Remove 'data: ' prefix
+                    const data = line.slice(6)
 
                     if (data === "[DONE]") continue
 
@@ -103,21 +98,25 @@ export function useChat() {
                         } else if (parsed.type === "text-delta" && currentTextBlockId) {
                             currentTextContent += parsed.delta
 
-                            // Update assistant message with streaming text
                             setMessages((prev) => {
                                 const newMessages = [...prev]
                                 const lastMessage = newMessages[newMessages.length - 1]
 
                                 if (lastMessage?.role === "assistant") {
-                                    // Update existing assistant message
-                                    lastMessage.parts = [
-                                        {
+                                    const textPartIndex = lastMessage.parts.findIndex((p: any) => p.type === "text")
+
+                                    if (textPartIndex >= 0) {
+                                        lastMessage.parts[textPartIndex] = {
                                             type: "text",
                                             text: currentTextContent,
-                                        },
-                                    ]
+                                        }
+                                    } else {
+                                        lastMessage.parts.push({
+                                            type: "text",
+                                            text: currentTextContent,
+                                        })
+                                    }
                                 } else {
-                                    // Add new assistant message
                                     newMessages.push({
                                         ...assistantMessage,
                                         parts: [
@@ -133,7 +132,91 @@ export function useChat() {
                             })
                         } else if (parsed.type === "text-end") {
                             currentTextBlockId = null
+                        } else if (parsed.type === "data-toolCall") {
+                            console.log("[v0] Tool call:", parsed.data.toolName, parsed.data.state)
+
+                            setMessages((prev) => {
+                                const newMessages = [...prev]
+                                const lastMessage = newMessages[newMessages.length - 1]
+
+                                if (lastMessage?.role === "assistant") {
+                                    const existingPartIndex = lastMessage.parts.findIndex(
+                                        (p: any) => p.type === "data-toolCall" && p.data?.id === parsed.data.id
+                                    )
+
+                                    if (existingPartIndex >= 0) {
+                                        lastMessage.parts[existingPartIndex] = {
+                                            type: "data-toolCall",
+                                            data: parsed.data,
+                                        }
+                                    } else {
+                                        lastMessage.parts.push({
+                                            type: "data-toolCall",
+                                            data: parsed.data,
+                                        })
+                                    }
+                                } else {
+                                    newMessages.push({
+                                        ...assistantMessage,
+                                        parts: [
+                                            {
+                                                type: "data-toolCall",
+                                                data: parsed.data,
+                                            },
+                                        ],
+                                    })
+                                }
+
+                                return newMessages
+                            })
+                        } else if (parsed.type === "data-toolResult") {
+
+                            setMessages((prev) => {
+                                const newMessages = [...prev]
+                                const lastMessage = newMessages[newMessages.length - 1]
+
+                                if (lastMessage?.role === "assistant") {
+                                    const toolCallIndex = lastMessage.parts.findIndex(
+                                        (p: any) => p.type === "data-toolCall" && p.data?.id === parsed.data.id
+                                    )
+
+                                    if (toolCallIndex >= 0) {
+                                        lastMessage.parts.splice(toolCallIndex, 1)
+                                    }
+
+                                    // Then handle the result part
+                                    const existingPartIndex = lastMessage.parts.findIndex(
+                                        (p: any) => p.type === "data-toolResult" && p.data?.id === parsed.data.id
+                                    )
+
+                                    if (existingPartIndex >= 0) {
+                                        lastMessage.parts[existingPartIndex] = {
+                                            type: "data-toolResult",
+                                            data: parsed.data,
+                                        }
+                                    } else {
+                                        lastMessage.parts.push({
+                                            type: "data-toolResult",
+                                            data: parsed.data,
+                                        })
+                                    }
+                                } else {
+                                    newMessages.push({
+                                        ...assistantMessage,
+                                        parts: [
+                                            {
+                                                type: "data-toolResult",
+                                                data: parsed.data,
+                                            },
+                                        ],
+                                    })
+                                }
+
+                                return newMessages
+                            })
                         }
+
+
                     } catch (e) {
                         console.error("[v0] Error parsing stream chunk:", e)
                     }
@@ -145,7 +228,6 @@ export function useChat() {
             console.error("[v0] Error sending message:", error)
             setStatus("error")
 
-            // Add error message
             setMessages((prev) => [
                 ...prev,
                 {
@@ -164,7 +246,6 @@ export function useChat() {
 
     const regenerate = useCallback(
         async (options: RegenerateOptions) => {
-            // Remove last assistant message
             setMessages((prev) => {
                 const newMessages = [...prev]
                 if (newMessages[newMessages.length - 1]?.role === "assistant") {
@@ -173,7 +254,6 @@ export function useChat() {
                 return newMessages
             })
 
-            // Get last user message
             const lastUserMessage = messages
                 .slice()
                 .reverse()
@@ -181,7 +261,6 @@ export function useChat() {
 
             if (!lastUserMessage) return
 
-            // Resend
             await sendMessage(
                 {
                     text: lastUserMessage.parts.find((p) => p.type === "text")?.text || "",

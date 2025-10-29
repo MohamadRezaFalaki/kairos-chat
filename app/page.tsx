@@ -51,6 +51,7 @@ import {getUserId} from "@/lib/utils/user"
 import {getUserChats, createChat, deleteChat, loadChatMessages} from "@/db/actions"
 import type {Chat} from "@/db/schema"
 import {useChat} from "@/hooks/use-chat-stream"
+import {DisplayBox} from "@/components/display-box"
 
 const models = [
     {
@@ -69,7 +70,7 @@ const ChatBotDemo = () => {
     const [currentChatId, setCurrentChatId] = useState<number | null>(null)
     const [isLoadingChats, setIsLoadingChats] = useState(true)
 
-    const {messages, sendMessage, status, regenerate, setMessages} = useChat()
+    const {messages, sendMessage, status, regenerate, setMessages, boxState} = useChat()
     useEffect(() => {
         const initializeUser = async () => {
             const id = getUserId()
@@ -77,6 +78,7 @@ const ChatBotDemo = () => {
             console.log("[v0] User ID:", id)
 
             if (id) {
+                console.log(2)
                 await loadUserChats(id)
             }
         }
@@ -478,6 +480,13 @@ const ChatBotDemo = () => {
                     </div>
                 </div>
             </SidebarInset>
+
+            {boxState && (
+                <DisplayBox
+                    backgroundColor={boxState.backgroundColor}
+                    text={boxState.text}
+                />
+            )}
         </SidebarProvider>
     )
 }

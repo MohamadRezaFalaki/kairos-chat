@@ -23,6 +23,12 @@ export function useChat() {
     const [messages, setMessages] = useState<UIMessage[]>([])
     const [status, setStatus] = useState<CustomChatStatus>("idle")
 
+    const [boxState, setBoxState] = useState<{
+        backgroundColor: string
+        text: string
+    } | null>(null)
+
+
     const sendMessage = useCallback(async (message: { text: string }, options: SendMessageOptions) => {
         const userMessage: UIMessage = {
             id: `msg-${Date.now()}`,
@@ -169,7 +175,10 @@ export function useChat() {
 
                                 return newMessages
                             })
-                        } else if (parsed.type === "data-toolResult") {
+                        }
+
+
+                        else if (parsed.type === "data-toolResult") {
 
                             setMessages((prev) => {
                                 const newMessages = [...prev]
@@ -216,6 +225,12 @@ export function useChat() {
                             })
                         }
 
+                        else if (parsed.type === "data-box-update") {
+                            setBoxState({
+                                backgroundColor: parsed.data.backgroundColor,
+                                text: parsed.data.text,
+                            })
+                        }
 
                     } catch (e) {
                         console.error("[v0] Error parsing stream chunk:", e)
@@ -277,5 +292,6 @@ export function useChat() {
         sendMessage,
         regenerate,
         status,
+        boxState,
     }
 }

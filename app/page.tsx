@@ -51,6 +51,8 @@ import {getUserId} from "@/lib/utils/user"
 import {getUserChats, createChat, deleteChat, loadChatMessages} from "@/db/actions"
 import type {Chat} from "@/db/schema"
 import {useChat} from "@/hooks/use-chat-stream"
+import {DisplayBox} from "@/components/display-box"
+import {Tool, ToolContent, ToolHeader, ToolInput, ToolOutput} from "@/components/ai-elements/tool"
 
 const models = [
     {
@@ -69,7 +71,7 @@ const ChatBotDemo = () => {
     const [currentChatId, setCurrentChatId] = useState<number | null>(null)
     const [isLoadingChats, setIsLoadingChats] = useState(true)
 
-    const {messages, sendMessage, status, regenerate, setMessages} = useChat()
+    const {messages, sendMessage, status, regenerate, setMessages, boxState} = useChat()
     useEffect(() => {
         const initializeUser = async () => {
             const id = getUserId()
@@ -77,6 +79,7 @@ const ChatBotDemo = () => {
             console.log("[v0] User ID:", id)
 
             if (id) {
+                console.log(2)
                 await loadUserChats(id)
             }
         }
@@ -309,59 +312,45 @@ const ChatBotDemo = () => {
                                                                 <ReasoningContent>{(part as any).text}</ReasoningContent>
                                                             </Reasoning>
                                                         )
-
+                                                    //
                                                     // case "data-toolCall":
+                                                    //     const toolState = (part as any).data.state === 'calling' ? 'input-streaming' :
+                                                    //         (part as any).data.state === 'executing' ? 'input-available' :
+                                                    //             'output-available';
+                                                    //
                                                     //     return (
-                                                    //         <div key={`${message.id}-${i}`} className="my-2">
-                                                    //             <div
-                                                    //                 className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                                                    //                 <div className="flex items-center gap-2">
-                                                    //                     {((part as any).data.state === 'calling' || (part as any).data.state === 'executing') && (
-                                                    //                         <Loader className="size-4"/>
-                                                    //                     )}
-                                                    //                     <span className="font-medium">
-                                                    //                         🔧 Tool: {(part as any).data.toolName}
-                                                    //                     </span>
-                                                    //                 </div>
-                                                    //                 {(part as any).data.state === 'calling' && (
-                                                    //                     <span className="text-xs">Preparing...</span>
-                                                    //                 )}
-                                                    //                 {(part as any).data.state === 'executing' && (
-                                                    //                     <span className="text-xs">Executing...</span>
-                                                    //                 )}
-                                                    //             </div>
-                                                    //         </div>
+                                                    //         <Tool key={`${message.id}-${i}`} defaultOpen={false}>
+                                                    //             <ToolHeader
+                                                    //                 type={`tool-${(part as any).data.toolName}`}
+                                                    //                 state={toolState as any}
+                                                    //             />
+                                                    //             <ToolContent>
+                                                    //                 <ToolInput input={(part as any).data.toolInput}/>
+                                                    //             </ToolContent>
+                                                    //         </Tool>
                                                     //     )
 
                                                     case "data-toolResult":
                                                         return (
-                                                            <div key={`${message.id}-${i}`} className="my-2">
-                                                                <div className="rounded-lg border bg-muted/50 p-4">
-                                                                    <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium">
-                        ✅ {(part as any).data.toolName}
-                    </span>
-                                                                    </div>
-
-                                                                    {/* Input */}
-                                                                    <div className="mb-2">
-                                                                        <p className="text-xs text-muted-foreground mb-1">Input:</p>
-                                                                        <pre
-                                                                            className="text-xs bg-background p-2 rounded overflow-auto">
-                        {JSON.stringify((part as any).data.toolInput, null, 2)}
-                    </pre>
-                                                                    </div>
-
-                                                                    {/* Output - PROPERLY STRINGIFIED */}
-                                                                    <div>
-                                                                        <p className="text-xs text-muted-foreground mb-1">Result:</p>
-                                                                        <pre
-                                                                            className="text-xs bg-background p-2 rounded overflow-auto max-h-64">
-                        {JSON.stringify((part as any).data.toolResult, null, 2)}
-                    </pre>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                                            <Tool key={`${message.id}-${i}`} defaultOpen={true}>
+                                                                <ToolHeader
+                                                                    type={`tool-${(part as any).data.toolName}`}
+                                                                    state="output-available"
+                                                                />
+                                                                <ToolContent>
+                                                                    <ToolInput input={(part as any).data.toolInput}/>
+                                                                    <ToolOutput
+                                                                        output={
+                                                                            <Response>
+                                                                                {typeof (part as any).data.toolResult === 'string'
+                                                                                    ? (part as any).data.toolResult
+                                                                                    : JSON.stringify((part as any).data.toolResult, null, 2)}
+                                                                            </Response>
+                                                                        }
+                                                                        errorText={undefined}
+                                                                    />
+                                                                </ToolContent>
+                                                            </Tool>
                                                         )
 
                                                     default:
@@ -478,6 +467,13 @@ const ChatBotDemo = () => {
                     </div>
                 </div>
             </SidebarInset>
+
+            {boxState && (
+                <DisplayBox
+                    backgroundColor={boxState.backgroundColor}
+                    text={boxState.text}
+                />
+            )}
         </SidebarProvider>
     )
 }

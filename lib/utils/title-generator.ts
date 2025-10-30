@@ -22,20 +22,28 @@ Assistant: ${assistantMessage}
 Title (6 words max, no quotes):`;
 
         const response = await model.invoke([new HumanMessage(prompt)]);
-
+        console.log("444444444response", response);
         let title = response.content.toString().trim();
+        console.log("5555555555title", title);
 
         title = title.replace(/^["']|["']$/g, '');
+        console.log("6666666666title", title);
+
         title = title.replace(/^Title:\s*/i, '');
+        console.log("6666666666title", title);
 
         const words = title.split(' ');
+        console.log("77777777777words", words);
+
         if (words.length > 6) {
             title = words.slice(0, 6).join(' ') + '...';
         }
+        console.log("88888888888title", title);
 
         if (title.length > 50) {
             title = title.substring(0, 47) + '...';
         }
+        console.log("88888888888title", title);
 
         return title || 'New Chat';
     } catch (error) {

@@ -1,14 +1,32 @@
 "use client"
 
-import type React from "react"
-
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
 import { Message, MessageContent } from "@/components/ai-elements/message"
-import type { PromptInputMessage } from "@/components/ai-elements/prompt-input"
+import {
+    PromptInput,
+    PromptInputActionAddAttachments,
+    PromptInputActionMenu,
+    PromptInputActionMenuContent,
+    PromptInputActionMenuTrigger,
+    PromptInputAttachment,
+    PromptInputAttachments,
+    PromptInputBody,
+    PromptInputButton,
+    type PromptInputMessage,
+    PromptInputModelSelect,
+    PromptInputModelSelectContent,
+    PromptInputModelSelectItem,
+    PromptInputModelSelectTrigger,
+    PromptInputModelSelectValue,
+    PromptInputSubmit,
+    PromptInputTextarea,
+    PromptInputToolbar,
+    PromptInputTools,
+} from "@/components/ai-elements/prompt-input"
 import { Action, Actions } from "@/components/ai-elements/actions"
 import { useState, useEffect } from "react"
 import { Response } from "@/components/ai-elements/response"
-import { CopyIcon, RefreshCcwIcon, MessageSquareIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { CopyIcon, GlobeIcon, RefreshCcwIcon, MessageSquareIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources"
 import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning"
 import { Loader } from "@/components/ai-elements/loader"
@@ -33,6 +51,8 @@ import type { Chat } from "@/db/schema"
 import { useChat } from "@/hooks/use-chat-stream"
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { DisplayBox } from "@/components/display-box"
+
 
 const models = [
     {
@@ -52,20 +72,24 @@ const ChatBotDemo = () => {
     const [isLoadingChats, setIsLoadingChats] = useState(true)
 
     const { messages, sendMessage, status, regenerate, setMessages, boxState } = useChat()
+
     useEffect(() => {
-        const initializeUser = async () => {
+        if (status !== 'idle') return;
+
+        const timeoutId = setTimeout(async () => {
             const id = getUserId()
             setUserId(id)
             console.log("[v0] User ID:", id)
 
             if (id) {
-                console.log(2)
                 await loadUserChats(id)
             }
-        }
+        }, 1500)
 
-        initializeUser()
-    }, [])
+        return () => {
+            clearTimeout(timeoutId)
+        }
+    }, [status])
 
     const loadUserChats = async (uid: string) => {
         setIsLoadingChats(true)
@@ -182,6 +206,7 @@ const ChatBotDemo = () => {
         <SidebarProvider>
             <Sidebar>
                 <SidebarHeader>
+
                     <div className="flex items-center justify-between p-2">
                         <h2 className="text-lg font-semibold">KAIROS</h2>
                         <Button size="sm" variant="ghost" onClick={handleNewChat}>
@@ -401,10 +426,59 @@ const ChatBotDemo = () => {
                                 </ConversationContent>
                                 <ConversationScrollButton />
                             </Conversation>
+                            <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
+                                <PromptInputBody>
+                                    <PromptInputAttachments>
+                                        {(attachment) => <PromptInputAttachment data={attachment}/>}
+                                    </PromptInputAttachments>
+                                    <PromptInputTextarea onChange={(e) => setInput(e.target.value)} value={input}/>
+                                </PromptInputBody>
+                                <PromptInputToolbar>
+                                    <PromptInputTools>
+                                        <PromptInputActionMenu>
+                                            <PromptInputActionMenuTrigger/>
+                                            <PromptInputActionMenuContent>
+                                                <PromptInputActionAddAttachments/>
+                                            </PromptInputActionMenuContent>
+                                        </PromptInputActionMenu>
+                                        {/*<PromptInputButton*/}
+                                        {/*    variant={webSearch ? "default" : "ghost"}*/}
+                                        {/*    onClick={() => setWebSearch(!webSearch)}*/}
+                                        {/*>*/}
+                                        {/*    <GlobeIcon size={16} />*/}
+                                        {/*    <span>Search</span>*/}
+                                        {/*</PromptInputButton>*/}
+                                        <PromptInputModelSelect
+                                            onValueChange={(value) => {
+                                                setModel(value)
+                                            }}
+                                            value={model}
+                                        >
+                                            <PromptInputModelSelectTrigger>
+                                                <PromptInputModelSelectValue/>
+                                            </PromptInputModelSelectTrigger>
+                                            <PromptInputModelSelectContent>
+                                                {models.map((model) => (
+                                                    <PromptInputModelSelectItem key={model.value} value={model.value}>
+                                                        {model.name}
+                                                    </PromptInputModelSelectItem>
+                                                ))}
+                                            </PromptInputModelSelectContent>
+                                        </PromptInputModelSelect>
+                                    </PromptInputTools>
+                                    <PromptInputSubmit disabled={!input && !status} status={status}/>
+                                </PromptInputToolbar>
+                            </PromptInput>
                         </div>
                     </div>
                 </div>
             </SidebarInset>
+            {boxState && (
+                <DisplayBox
+                    backgroundColor={boxState.backgroundColor}
+                    text={boxState.text}
+                />
+            )}
         </SidebarProvider>
     )
 }

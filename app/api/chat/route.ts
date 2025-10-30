@@ -13,7 +13,7 @@ import path from 'path';
 import {concat} from "@langchain/core/utils/stream";
 import {tool} from '@langchain/core/tools';
 import {z} from 'zod';
-import { eq, sql } from 'drizzle-orm';
+import {eq, sql} from 'drizzle-orm';
 import {generateChatTitle} from "@/lib/utils/title-generator";
 import {db} from "@/db";
 import {chats, messages as messagesTable} from "@/db/schema";
@@ -403,17 +403,18 @@ export async function POST(req: Request) {
                         .where(eq(messagesTable.chatId, chat.id));
 
                     if (chatMessageCount[0].count == 2) {
-                        console.log('🏷️ Generating title for new chat...');
+                        console.log('🏷️11111111111 Generating title for new chat...');
 
                         const userText = newUserMessage.parts
                             .filter(p => p.type === 'text')
                             .map(p => (p as any).text)
                             .join(' ');
-
+                        console.log("2222222222222userText", userText);
                         const assistantText = assistantMessage.parts
                             .filter(p => p.type === 'text')
                             .map(p => (p as any).text)
                             .join(' ');
+                        console.log("3333333333333333assistantText", assistantText);
 
                         generateChatTitle(userText, assistantText)
                             .then(title => updateChatTitle(chat.id, title))

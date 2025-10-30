@@ -2,36 +2,16 @@
 
 import type React from "react"
 
-import {Conversation, ConversationContent, ConversationScrollButton} from "@/components/ai-elements/conversation"
-import {Message, MessageContent} from "@/components/ai-elements/message"
-import {
-    PromptInput,
-    PromptInputActionAddAttachments,
-    PromptInputActionMenu,
-    PromptInputActionMenuContent,
-    PromptInputActionMenuTrigger,
-    PromptInputAttachment,
-    PromptInputAttachments,
-    PromptInputBody,
-    PromptInputButton,
-    type PromptInputMessage,
-    PromptInputModelSelect,
-    PromptInputModelSelectContent,
-    PromptInputModelSelectItem,
-    PromptInputModelSelectTrigger,
-    PromptInputModelSelectValue,
-    PromptInputSubmit,
-    PromptInputTextarea,
-    PromptInputToolbar,
-    PromptInputTools,
-} from "@/components/ai-elements/prompt-input"
-import {Action, Actions} from "@/components/ai-elements/actions"
-import {useState, useEffect} from "react"
-import {Response} from "@/components/ai-elements/response"
-import {CopyIcon, GlobeIcon, RefreshCcwIcon, MessageSquareIcon, PlusIcon, Trash2Icon} from "lucide-react"
-import {Source, Sources, SourcesContent, SourcesTrigger} from "@/components/ai-elements/sources"
-import {Reasoning, ReasoningContent, ReasoningTrigger} from "@/components/ai-elements/reasoning"
-import {Loader} from "@/components/ai-elements/loader"
+import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
+import { Message, MessageContent } from "@/components/ai-elements/message"
+import type { PromptInputMessage } from "@/components/ai-elements/prompt-input"
+import { Action, Actions } from "@/components/ai-elements/actions"
+import { useState, useEffect } from "react"
+import { Response } from "@/components/ai-elements/response"
+import { CopyIcon, RefreshCcwIcon, MessageSquareIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources"
+import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning"
+import { Loader } from "@/components/ai-elements/loader"
 import {
     Sidebar,
     SidebarContent,
@@ -46,13 +26,13 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
-import {Button} from "@/components/ui/button"
-import {getUserId} from "@/lib/utils/user"
-import {getUserChats, createChat, deleteChat, loadChatMessages} from "@/db/actions"
-import type {Chat} from "@/db/schema"
-import {useChat} from "@/hooks/use-chat-stream"
-import {DisplayBox} from "@/components/display-box"
-import {Tool, ToolContent, ToolHeader, ToolInput, ToolOutput} from "@/components/ai-elements/tool"
+import { Button } from "@/components/ui/button"
+import { getUserId } from "@/lib/utils/user"
+import { getUserChats, createChat, deleteChat, loadChatMessages } from "@/db/actions"
+import type { Chat } from "@/db/schema"
+import { useChat } from "@/hooks/use-chat-stream"
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const models = [
     {
@@ -71,7 +51,7 @@ const ChatBotDemo = () => {
     const [currentChatId, setCurrentChatId] = useState<number | null>(null)
     const [isLoadingChats, setIsLoadingChats] = useState(true)
 
-    const {messages, sendMessage, status, regenerate, setMessages, boxState} = useChat()
+    const { messages, sendMessage, status, regenerate, setMessages, boxState } = useChat()
     useEffect(() => {
         const initializeUser = async () => {
             const id = getUserId()
@@ -173,13 +153,13 @@ const ChatBotDemo = () => {
         console.log("[v0] Sending message:", message)
 
         await sendMessage(
-            {text: message.text ?? ""}, // Provides empty string if undefined
+            { text: message.text ?? "" }, // Provides empty string if undefined
             {
                 sessionId: currentChatId?.toString() || "0",
                 userId: userId,
                 model: model,
                 webSearch: webSearch,
-            }
+            },
         )
 
         setInput("")
@@ -205,7 +185,7 @@ const ChatBotDemo = () => {
                     <div className="flex items-center justify-between p-2">
                         <h2 className="text-lg font-semibold">KAIROS</h2>
                         <Button size="sm" variant="ghost" onClick={handleNewChat}>
-                            <PlusIcon className="size-4"/>
+                            <PlusIcon className="size-4" />
                         </Button>
                     </div>
                 </SidebarHeader>
@@ -215,8 +195,7 @@ const ChatBotDemo = () => {
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 {isLoadingChats ? (
-                                    <div className="p-4 text-center text-sm text-muted-foreground">Loading
-                                        chats...</div>
+                                    <div className="p-4 text-center text-sm text-muted-foreground">Loading chats...</div>
                                 ) : chats.length === 0 ? (
                                     <div className="p-4 text-center text-sm text-muted-foreground">No chats yet</div>
                                 ) : (
@@ -228,7 +207,7 @@ const ChatBotDemo = () => {
                                                 className="w-full justify-between group"
                                             >
                                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                    <MessageSquareIcon className="size-4 shrink-0"/>
+                                                    <MessageSquareIcon className="size-4 shrink-0" />
                                                     <span className="truncate">{chat.title}</span>
                                                 </div>
                                                 <Button
@@ -237,7 +216,7 @@ const ChatBotDemo = () => {
                                                     className="opacity-0 group-hover:opacity-100 shrink-0"
                                                     onClick={(e) => handleDeleteChat(chat.id, e)}
                                                 >
-                                                    <Trash2Icon className="size-3"/>
+                                                    <Trash2Icon className="size-3" />
                                                 </Button>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
@@ -253,13 +232,16 @@ const ChatBotDemo = () => {
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-6">
                         <div className="flex items-center gap-2">
-                            <SidebarTrigger/>
+                            <SidebarTrigger />
                             <h1 className="text-lg font-semibold">Chat</h1>
                             {currentChatId && (
                                 <span className="text-sm text-muted-foreground">
                   - {chats.find((c) => c.id === currentChatId)?.title}
                 </span>
                             )}
+                        </div>
+                        <div className="ml-auto">
+                            <ThemeToggle />
                         </div>
                     </header>
 
@@ -272,8 +254,7 @@ const ChatBotDemo = () => {
                                             {message.role === "assistant" &&
                                                 message.parts.filter((part) => part.type === "source-url").length > 0 && (
                                                     <Sources>
-                                                        <SourcesTrigger
-                                                            count={message.parts.filter((part) => part.type === "source-url").length}/>
+                                                        <SourcesTrigger count={message.parts.filter((part) => part.type === "source-url").length} />
                                                         {message.parts
                                                             .filter((part) => part.type === "source-url")
                                                             .map((part, i) => (
@@ -308,7 +289,7 @@ const ChatBotDemo = () => {
                                                                     message.id === messages.at(-1)?.id
                                                                 }
                                                             >
-                                                                <ReasoningTrigger/>
+                                                                <ReasoningTrigger />
                                                                 <ReasoningContent>{(part as any).text}</ReasoningContent>
                                                             </Reasoning>
                                                         )
@@ -333,16 +314,13 @@ const ChatBotDemo = () => {
                                                     case "data-toolResult":
                                                         return (
                                                             <Tool key={`${message.id}-${i}`} defaultOpen={true}>
-                                                                <ToolHeader
-                                                                    type={`tool-${(part as any).data.toolName}`}
-                                                                    state="output-available"
-                                                                />
+                                                                <ToolHeader type={`tool-${(part as any).data.toolName}`} state="output-available" />
                                                                 <ToolContent>
-                                                                    <ToolInput input={(part as any).data.toolInput}/>
+                                                                    <ToolInput input={(part as any).data.toolInput} />
                                                                     <ToolOutput
                                                                         output={
                                                                             <Response>
-                                                                                {typeof (part as any).data.toolResult === 'string'
+                                                                                {typeof (part as any).data.toolResult === "string"
                                                                                     ? (part as any).data.toolResult
                                                                                     : JSON.stringify((part as any).data.toolResult, null, 2)}
                                                                             </Response>
@@ -360,7 +338,7 @@ const ChatBotDemo = () => {
                                             {message.role === "assistant" && (
                                                 <Actions className="mt-2">
                                                     <Action onClick={handleRegenerate} label="Retry" tooltip="Retry">
-                                                        <RefreshCcwIcon className="size-3"/>
+                                                        <RefreshCcwIcon className="size-3" />
                                                     </Action>
                                                     <Action
                                                         onClick={() => {
@@ -373,7 +351,7 @@ const ChatBotDemo = () => {
                                                         label="Copy"
                                                         tooltip="Copy"
                                                     >
-                                                        <CopyIcon className="size-3"/>
+                                                        <CopyIcon className="size-3" />
                                                     </Action>
                                                 </Actions>
                                             )}
@@ -390,7 +368,7 @@ const ChatBotDemo = () => {
                                                         label="Copy"
                                                         tooltip="Copy"
                                                     >
-                                                        <CopyIcon className="size-3"/>
+                                                        <CopyIcon className="size-3" />
                                                     </Action>
                                                 </Actions>
                                             )}
@@ -400,80 +378,33 @@ const ChatBotDemo = () => {
                                         <Message from="assistant">
                                             <MessageContent>
                                                 <div className="flex items-center gap-3 text-muted-foreground">
-                                                    <Loader size={20}/>
+                                                    <Loader size={20} />
                                                     <span className="text-sm">Kairos is thinking...</span>
                                                 </div>
                                             </MessageContent>
                                         </Message>
                                     )}
 
-                                    {status === "streaming" && messages.length > 0 && messages[messages.length - 1].role === "assistant" && messages[messages.length - 1].parts.length === 0 && (
-                                        <Message from="assistant">
-                                            <MessageContent>
-                                                <div className="flex items-center gap-3 text-muted-foreground">
-                                                    <Loader size={20}/>
-                                                    <span className="text-sm">Processing...</span>
-                                                </div>
-                                            </MessageContent>
-                                        </Message>
-                                    )}                                </ConversationContent>
-                                <ConversationScrollButton/>
+                                    {status === "streaming" &&
+                                        messages.length > 0 &&
+                                        messages[messages.length - 1].role === "assistant" &&
+                                        messages[messages.length - 1].parts.length === 0 && (
+                                            <Message from="assistant">
+                                                <MessageContent>
+                                                    <div className="flex items-center gap-3 text-muted-foreground">
+                                                        <Loader size={20} />
+                                                        <span className="text-sm">Processing...</span>
+                                                    </div>
+                                                </MessageContent>
+                                            </Message>
+                                        )}
+                                </ConversationContent>
+                                <ConversationScrollButton />
                             </Conversation>
-
-                            <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
-                                <PromptInputBody>
-                                    <PromptInputAttachments>
-                                        {(attachment) => <PromptInputAttachment data={attachment}/>}
-                                    </PromptInputAttachments>
-                                    <PromptInputTextarea onChange={(e) => setInput(e.target.value)} value={input}/>
-                                </PromptInputBody>
-                                <PromptInputToolbar>
-                                    <PromptInputTools>
-                                        <PromptInputActionMenu>
-                                            <PromptInputActionMenuTrigger/>
-                                            <PromptInputActionMenuContent>
-                                                <PromptInputActionAddAttachments/>
-                                            </PromptInputActionMenuContent>
-                                        </PromptInputActionMenu>
-                                        {/*<PromptInputButton*/}
-                                        {/*    variant={webSearch ? "default" : "ghost"}*/}
-                                        {/*    onClick={() => setWebSearch(!webSearch)}*/}
-                                        {/*>*/}
-                                        {/*    <GlobeIcon size={16} />*/}
-                                        {/*    <span>Search</span>*/}
-                                        {/*</PromptInputButton>*/}
-                                        <PromptInputModelSelect
-                                            onValueChange={(value) => {
-                                                setModel(value)
-                                            }}
-                                            value={model}
-                                        >
-                                            <PromptInputModelSelectTrigger>
-                                                <PromptInputModelSelectValue/>
-                                            </PromptInputModelSelectTrigger>
-                                            <PromptInputModelSelectContent>
-                                                {models.map((model) => (
-                                                    <PromptInputModelSelectItem key={model.value} value={model.value}>
-                                                        {model.name}
-                                                    </PromptInputModelSelectItem>
-                                                ))}
-                                            </PromptInputModelSelectContent>
-                                        </PromptInputModelSelect>
-                                    </PromptInputTools>
-                                    <PromptInputSubmit disabled={!input && !status} status={status}/>
-                                </PromptInputToolbar>
-                            </PromptInput>
                         </div>
                     </div>
                 </div>
             </SidebarInset>
-
-            {boxState && (
-                <DisplayBox
-                    backgroundColor={boxState.backgroundColor}
-                    text={boxState.text}
-                />
-            )}
         </SidebarProvider>
     )
 }

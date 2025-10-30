@@ -4,7 +4,7 @@ import {
     createUIMessageStreamResponse,
     type UIMessage
 } from 'ai';
-import {getChat, createChat, loadChatMessages, saveMessages} from '@/db/actions';
+import {getChat, createChat, loadChatMessages, saveMessages, updateChatTitle} from '@/db/actions';
 import {uiMessagesToLangChain} from '@/lib/utils/message-conversion';
 import {searchSimilarChunks} from '@/lib/rag/document-processor';
 import {SystemMessage, HumanMessage, AIMessage, ToolMessage} from '@langchain/core/messages';
@@ -13,6 +13,10 @@ import path from 'path';
 import {concat} from "@langchain/core/utils/stream";
 import {tool} from '@langchain/core/tools';
 import {z} from 'zod';
+import { eq, sql } from 'drizzle-orm';
+import {generateChatTitle} from "@/lib/utils/title-generator";
+import {db} from "@/db";
+import {chats, messages as messagesTable} from "@/db/schema";
 
 const SYSTEM_PROMPT = `You are KAIROS, an AI trading assistant designed to help traders and investors.
 
@@ -74,7 +78,7 @@ You have been trained with the official KAIROS User Handbook documentation. This
    - Never speculate or make up information`;
 
 const displayBoxTool = tool(
-    async ({ backgroundColor, text }) => {
+    async ({backgroundColor, text}) => {
         return `Box updated: background=${backgroundColor}, text="${text}"`;
     },
     {
@@ -103,9 +107,7 @@ async function streamModelResponse(
 
             if (typeof chunk.content === 'string') {
                 textToAdd = chunk.content;
-            }
-
-            else if (Array.isArray(chunk.content)) {
+            } else if (Array.isArray(chunk.content)) {
 
                 for (const block of chunk.content) {
                     if (block.type === 'text' && block.text) {
@@ -323,7 +325,7 @@ export async function POST(req: Request) {
                             })),
                         ];
 
-                        console.log("----------------------------------------------------finalMessages-------------------------------------------------------",finalMessages);
+                        console.log("----------------------------------------------------finalMessages-------------------------------------------------------", finalMessages);
 
                         const finalStream = await model.stream(finalMessages);
 
@@ -394,6 +396,30 @@ export async function POST(req: Request) {
                     };
 
                     await saveMessages(chat.id, [newUserMessage, assistantMessage]);
+
+                    const chatMessageCount = await db
+                        .select({count: sql`count(*)`})
+                        .from(messagesTable)
+                        .where(eq(messagesTable.chatId, chat.id));
+
+                    if (chatMessageCount[0].count == 2) {
+                        console.log('🏷️ Generating title for new chat...');
+
+                        const userText = newUserMessage.parts
+                            .filter(p => p.type === 'text')
+                            .map(p => (p as any).text)
+                            .join(' ');
+
+                        const assistantText = assistantMessage.parts
+                            .filter(p => p.type === 'text')
+                            .map(p => (p as any).text)
+                            .join(' ');
+
+                        generateChatTitle(userText, assistantText)
+                            .then(title => updateChatTitle(chat.id, title))
+                            .then(() => console.log('✅ Title generated and saved'))
+                            .catch(err => console.error('❌ Title generation failed:', err));
+                    }
 
                 } catch (error) {
                     console.error('❌ Error during streaming:', error);

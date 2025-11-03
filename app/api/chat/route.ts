@@ -16,7 +16,7 @@ import {z} from 'zod';
 import {eq, sql} from 'drizzle-orm';
 import {generateChatTitle} from "@/lib/utils/title-generator";
 import {db} from "@/db";
-import {chats, messages as messagesTable} from "@/db/schema";
+import {parts as partsTable, messages as messagesTable} from "@/db/schema";
 
 const SYSTEM_PROMPT = `You are KAIROS, an AI trading assistant designed to help traders and investors.
 
@@ -325,8 +325,6 @@ export async function POST(req: Request) {
                             })),
                         ];
 
-                        console.log("----------------------------------------------------finalMessages-------------------------------------------------------", finalMessages);
-
                         const finalStream = await model.stream(finalMessages);
 
                         const finalTextBlockId = `text-${Date.now()}`;
@@ -402,26 +400,90 @@ export async function POST(req: Request) {
                         .from(messagesTable)
                         .where(eq(messagesTable.chatId, chat.id));
 
-                    if (chatMessageCount[0].count == 2) {
-                        console.log('🏷️11111111111 Generating title for new chat...');
+                    console.log("Message count:", chatMessageCount);
 
-                        const userText = newUserMessage.parts
-                            .filter(p => p.type === 'text')
-                            .map(p => (p as any).text)
-                            .join(' ');
-                        console.log("2222222222222userText", userText);
-                        const assistantText = assistantMessage.parts
-                            .filter(p => p.type === 'text')
-                            .map(p => (p as any).text)
-                            .join(' ');
-                        console.log("3333333333333333assistantText", assistantText);
+                    if (chatMessageCount[0]?.count == 4) {
+                        console.log('🏷️ Generating title for chat...');
 
-                        generateChatTitle(userText, assistantText)
-                            .then(title => updateChatTitle(chat.id, title))
-                            .then(() => console.log('✅ Title generated and saved'))
-                            .catch(err => console.error('❌ Title generation failed:', err));
+                        const chatMessages = await db
+                            .select()
+                            .from(messagesTable)
+                            .where(eq(messagesTable.chatId, chat.id))
+                            .orderBy(messagesTable.createdAt)
+                            .limit(4);
+
+                        const exchanges: { userMessage: string; assistantMessage: string }[] = [];
+
+                        if (chatMessages[0] && chatMessages[1]) {
+                            const firstUserParts = await db
+                                .select()
+                                .from(partsTable)
+                                .where(eq(partsTable.messageId, chatMessages[0].id))
+                                .orderBy(partsTable.partIndex);
+
+                            const firstAssistantParts = await db
+                                .select()
+                                .from(partsTable)
+                                .where(eq(partsTable.messageId, chatMessages[1].id))
+                                .orderBy(partsTable.partIndex);
+
+                            const firstUserText = firstUserParts
+                                .filter(p => p.textContent)
+                                .map(p => p.textContent)
+                                .join(' ');
+
+                            const firstAssistantText = firstAssistantParts
+                                .filter(p => p.textContent)
+                                .map(p => p.textContent)
+                                .join(' ');
+
+                            exchanges.push({
+                                userMessage: firstUserText,
+                                assistantMessage: firstAssistantText,
+                            });
+                        }
+
+                        if (chatMessages[2] && chatMessages[3]) {
+                            const secondUserParts = await db
+                                .select()
+                                .from(partsTable)
+                                .where(eq(partsTable.messageId, chatMessages[2].id))
+                                .orderBy(partsTable.partIndex);
+
+                            const secondAssistantParts = await db
+                                .select()
+                                .from(partsTable)
+                                .where(eq(partsTable.messageId, chatMessages[3].id))
+                                .orderBy(partsTable.partIndex);
+
+                            const secondUserText = secondUserParts
+                                .filter(p => p.textContent)
+                                .map(p => p.textContent)
+                                .join(' ');
+
+                            const secondAssistantText = secondAssistantParts
+                                .filter(p => p.textContent)
+                                .map(p => p.textContent)
+                                .join(' ');
+
+                            exchanges.push({
+                                userMessage: secondUserText,
+                                assistantMessage: secondAssistantText,
+                            });
+                        }
+
+                        if (exchanges.length > 0) {
+                            console.log('📝 Exchanges to analyze:', exchanges.length);
+
+                            generateChatTitle(exchanges)
+                                .then(title => {
+                                    console.log('✅ Generated title:', title);
+                                    return updateChatTitle(chat.id, title);
+                                })
+                                .then(() => console.log('✅ Title saved to database'))
+                                .catch(err => console.error('❌ Title generation failed:', err));
+                        }
                     }
-
                 } catch (error) {
                     console.error('❌ Error during streaming:', error);
 

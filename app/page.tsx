@@ -84,7 +84,7 @@ const ChatBotDemo = () => {
             if (id) {
                 await loadUserChats(id)
             }
-        }, 1500)
+        }, 2000)
 
         return () => {
             clearTimeout(timeoutId)

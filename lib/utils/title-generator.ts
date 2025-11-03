@@ -1,9 +1,13 @@
-import {ChatAnthropic} from '@langchain/anthropic';
-import {HumanMessage} from '@langchain/core/messages';
+import { ChatAnthropic } from '@langchain/anthropic';
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+
+interface ConversationExchange {
+    userMessage: string;
+    assistantMessage: string;
+}
 
 export async function generateChatTitle(
-    userMessage: string,
-    assistantMessage: string
+    exchanges: ConversationExchange[]
 ): Promise<string> {
     try {
         const model = new ChatAnthropic({
@@ -13,41 +17,61 @@ export async function generateChatTitle(
             maxTokens: 50,
         });
 
-        const prompt = `Generate a concise, descriptive title (maximum 6 words) for this conversation.
-The title should capture the main topic or question.
+        const systemPrompt = `You are a title generator. Your only job is to create short, descriptive titles for conversations.
 
-User: ${userMessage}
-Assistant: ${assistantMessage}
+Rules:
+- Output ONLY the title (no explanations, no quotes, no prefix)
+- Maximum 6 words
+- Look at the FULL conversation to understand the topic
+- Even if conversation starts with greetings, find the actual topic
+- Be specific and descriptive
+- Examples of GOOD titles:
+  * "Bitcoin Price Analysis"
+  * "Trading Strategy Discussion"
+  * "Platform Features Overview"
+  * "Casual Greeting Conversation" (if truly only greetings)
+- NEVER output: "New Conversation", "New Chat", or generic phrases`;
 
-Title (6 words max, no quotes):`;
+        const conversationText = exchanges
+            .map((ex, i) => `Exchange ${i + 1}:\nUser: ${ex.userMessage}\nAssistant: ${ex.assistantMessage}`)
+            .join('\n\n');
 
-        const response = await model.invoke([new HumanMessage(prompt)]);
-        console.log("444444444response", response);
+        const userPrompt = `Full conversation:\n\n${conversationText}\n\nGenerate a descriptive title (6 words max):`;
+
+        const response = await model.invoke([
+            new SystemMessage(systemPrompt),
+            new HumanMessage(userPrompt),
+        ]);
+
         let title = response.content.toString().trim();
-        console.log("5555555555title", title);
+        console.log("Raw title:", title);
 
         title = title.replace(/^["']|["']$/g, '');
-        console.log("6666666666title", title);
-
         title = title.replace(/^Title:\s*/i, '');
-        console.log("6666666666title", title);
+        title = title.replace(/^Here's?\s+a?\s+title:\s*/i, '');
 
-        const words = title.split(' ');
-        console.log("77777777777words", words);
+        const lines = title.split('\n');
+        if (lines.length > 1) {
+            title = lines[0];
+        }
 
+        const words = title.split(' ').filter(w => w.length > 0);
         if (words.length > 6) {
             title = words.slice(0, 6).join(' ') + '...';
         }
-        console.log("88888888888title", title);
 
         if (title.length > 50) {
             title = title.substring(0, 47) + '...';
         }
-        console.log("88888888888title", title);
 
-        return title || 'New Chat';
+        if (!title || title.length < 3) {
+            return 'General Conversation';
+        }
+
+        console.log("Final title:", title);
+        return title;
     } catch (error) {
         console.error('❌ Error generating title:', error);
-        return 'New Chat';
+        return 'General Conversation';
     }
 }
